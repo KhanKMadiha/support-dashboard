@@ -3,17 +3,18 @@
    ========================================================================== */
 
 :root {
-  --bg-base: #fafaf8;
-  --surface: #f5eeec;
+  --chrome-bg: #f5eee8;
+  --bg-base: var(--chrome-bg);
+  --surface: var(--chrome-bg);
   --accent: #d4a4a0;
   --accent-hover: #c8928e;
-  --surface-soft: #ede8e6;
+  --surface-soft: #efe6de;
   --text-dark: #1a1a1a;
   --muted: rgba(26, 26, 26, 0.6);
   --muted-light: rgba(26, 26, 26, 0.45);
   --border-soft: rgba(180, 140, 135, 0.2);
   --border-strong: rgba(180, 140, 135, 0.38);
-  --white-glass: rgba(255, 255, 255, 0.75);
+  --white-glass: var(--chrome-bg);
   --success: #5a7d5e;
   --warning: #9a7b4f;
   --error: #a65c5c;
@@ -21,8 +22,8 @@
   --shadow: 0 2px 12px rgba(180, 140, 135, 0.12);
   --shadow-lg: 0 12px 40px rgba(26, 26, 26, 0.12);
 
-  --sidebar-bg: #f5eee8;
-  --footer-bar-bg: #f7f3f1;
+  --sidebar-bg: var(--chrome-bg);
+  --footer-bar-bg: var(--chrome-bg);
   --content-max: 52rem;
   --terracotta: #7d3a1e;
   --terracotta-hover: #6a3119;
@@ -607,7 +608,7 @@ body {
   max-width: min(28rem, 100%);
   margin: 0;
   padding: 0.45rem 0.65rem 0.45rem 0.85rem;
-  background: #f5eee8;
+  background: var(--sidebar-bg);
   border: 1px solid #c0948a;
   border-radius: 999px;
   white-space: nowrap;
@@ -1228,7 +1229,7 @@ button.loading .spinner,
 /* Inset cards — low-contrast on panel surface (Option B) */
 .panel-inset-card {
   padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--chrome-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
@@ -1370,7 +1371,7 @@ button.loading .spinner,
 }
 
 .near-miss-item:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--surface-soft);
   border-color: var(--border-strong);
 }
 
