@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Tool | Ticket Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.23.0/dist/tabler-icons.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div class="sidebar-backdrop hidden" id="sidebar-backdrop" aria-hidden="true"></div>
+
+  <div class="app-layout" id="app-layout">
+    <aside class="step-sidebar" id="step-sidebar" aria-label="Workflow progress">
+      <div class="sidebar-header">
+        <span class="sidebar-header__title" id="sidebar-header-title">Steps</span>
+        <button
+          type="button"
+          class="sidebar-toggle"
+          id="sidebar-toggle"
+          aria-label="Collapse sidebar"
+          aria-expanded="true"
+          aria-controls="step-sidebar"
+        >
+          <i class="ti ti-layout-sidebar-left-collapse sidebar-toggle__icon sidebar-toggle__icon--collapse" aria-hidden="true"></i>
+          <i class="ti ti-layout-sidebar-left-expand sidebar-toggle__icon sidebar-toggle__icon--expand" aria-hidden="true"></i>
+        </button>
+      </div>
+      <nav class="step-indicator">
+        <ol class="step-list" id="step-list">
+          <li class="step-item active reachable" data-step="1">
+            <button type="button" class="step-link" data-step-nav="1" aria-current="step">
+              <span class="step-row">
+                <span class="step-marker" aria-hidden="true">
+                  <span class="step-number">1</span>
+                  <svg class="step-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="step-copy">
+                  <span class="step-label-row">
+                    <i class="ti ti-ticket step-label-icon" aria-hidden="true"></i>
+                    <span class="step-label">Paste ticket</span>
+                  </span>
+                </span>
+              </span>
+            </button>
+          </li>
+          <li class="step-item locked" data-step="2">
+            <button type="button" class="step-link" data-step-nav="2" disabled>
+              <span class="step-row">
+                <span class="step-marker" aria-hidden="true">
+                  <span class="step-number">2</span>
+                  <svg class="step-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="step-copy">
+                  <span class="step-label-row">
+                    <i class="ti ti-file-search step-label-icon" aria-hidden="true"></i>
+                    <span class="step-label">Match docs</span>
+                  </span>
+                </span>
+              </span>
+            </button>
+          </li>
+          <li class="step-item locked" data-step="3">
+            <button type="button" class="step-link" data-step-nav="3" disabled>
+              <span class="step-row">
+                <span class="step-marker" aria-hidden="true">
+                  <span class="step-number">3</span>
+                  <svg class="step-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="step-copy">
+                  <span class="step-label-row">
+                    <i class="ti ti-pencil step-label-icon" aria-hidden="true"></i>
+                    <span class="step-label">Write response</span>
+                  </span>
+                </span>
+              </span>
+            </button>
+          </li>
+          <li class="step-item locked" data-step="4">
+            <button type="button" class="step-link" data-step-nav="4" disabled>
+              <span class="step-row">
+                <span class="step-marker" aria-hidden="true">
+                  <span class="step-number">4</span>
+                  <svg class="step-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="step-copy">
+                  <span class="step-label-row">
+                    <i class="ti ti-book step-label-icon" aria-hidden="true"></i>
+                    <span class="step-label">Generate KB</span>
+                  </span>
+                </span>
+              </span>
+            </button>
+          </li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main class="main-content" id="main-content">
+      <div class="main-content-body">
+        <div class="main-content-grow">
+          <div class="content-inner">
+            <header class="page-header">
+              <div class="page-header__row">
+                <div class="page-header__copy">
+                  <h1>Support ticket analyser</h1>
+                  <p>Paste a ticket, analyse against documentation, then draft your reply and capture knowledge for the KB.</p>
+                </div>
+              </div>
+            </header>
+
+            <div class="portfolio-demo-banner hidden" id="portfolio-demo-banner" role="status">
+              <p>
+                <strong>Portfolio demo.</strong>
+                Steps 1–3 run in your browser. KB generation and Notion publish are simulated — nothing is sent to external services.
+                Self-hosting with your own worker: add <code>?live=1</code> to the URL.
+              </p>
+            </div>
+
+            <div id="step-1-view" class="workflow-view">
+              <section class="section" id="ticket-section">
+                <label for="incoming-ticket">Incoming ticket</label>
+                <textarea
+                  id="incoming-ticket"
+                  placeholder="Paste the customer's ticket here — subject, description, error messages, and any relevant context."
+                  spellcheck="true"
+                ></textarea>
+              </section>
+              <p class="validation-hint hidden" id="analyse-validation" role="status">
+                Paste a ticket above before analysing.
+              </p>
+            </div>
+
+            <div id="step-2-view" class="workflow-view hidden">
+              <section class="section panel" id="docs-panel" aria-live="polite" tabindex="-1">
+                <div class="panel-header">
+                  <h2 id="docs-panel-title">Scanning documentation</h2>
+                  <span class="status-badge idle" id="docs-status">Scanning</span>
+                </div>
+                <div class="panel-body" id="docs-body"></div>
+              </section>
+              <section class="section panel related-articles-panel hidden" id="related-articles-panel" aria-live="polite">
+                <div class="panel-header related-articles-header">
+                  <div class="related-articles-heading">
+                    <h2>Related articles</h2>
+                    <p class="related-articles-subtitle">Expand an article to view troubleshooting steps</p>
+                  </div>
+                  <span class="related-articles-count hidden" id="related-articles-count" aria-hidden="true"></span>
+                </div>
+                <div class="panel-body" id="related-articles-body"></div>
+              </section>
+              <p class="doc-gap-guidance hidden" id="doc-gap-guidance" role="status">
+                When you are ready, continue to write your response.
+              </p>
+            </div>
+
+            <div id="step-3-view" class="workflow-view hidden">
+              <section class="section" id="response-section">
+                <div class="response-label-row">
+                  <label for="support-response">
+                    Support response
+                    <span class="hint" id="response-hint"></span>
+                  </label>
+                  <button type="button" class="copy-response hidden" id="copy-response-btn" title="Copy response to clipboard" aria-label="Copy response to clipboard">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span class="copy-label">Copy</span>
+                  </button>
+                </div>
+                <textarea
+                  id="support-response"
+                  placeholder="Your response to the client will appear here after analysis, or you can write your own."
+                  spellcheck="true"
+                ></textarea>
+              </section>
+              <section class="section" id="ticket-reference-section">
+                <label for="ticket-reference">
+                  Incoming ticket
+                  <span class="hint">— for reference only</span>
+                </label>
+                <textarea id="ticket-reference" readonly tabindex="-1" aria-readonly="true" spellcheck="false"></textarea>
+              </section>
+            </div>
+
+            <div id="step-4-view" class="workflow-view hidden" aria-live="polite">
+              <section class="section panel kb-article-panel" id="kb-article-panel">
+                <div class="panel-header">
+                  <div class="panel-header__title-group">
+                    <h2>KB draft article</h2>
+                    <span class="status-badge idle" id="kb-gen-status">Draft</span>
+                  </div>
+                </div>
+                <div class="panel-body" id="kb-article-body">
+                  <p class="panel-body empty" id="kb-placeholder">Generating your knowledge base article…</p>
+                  <div id="kb-article-content" class="hidden">
+                    <div class="kb-field">
+                      <label class="kb-field-label" for="kb-title">Title</label>
+                      <input type="text" class="kb-input kb-input--title" id="kb-title" autocomplete="off" />
+                    </div>
+                    <div class="kb-field">
+                      <label class="kb-field-label" for="kb-category">Category</label>
+                      <input type="text" class="kb-input" id="kb-category" autocomplete="off" />
+                    </div>
+                    <div class="kb-field">
+                      <label class="kb-field-label" for="kb-summary">Summary</label>
+                      <textarea class="kb-input kb-textarea" id="kb-summary" rows="4" spellcheck="true"></textarea>
+                    </div>
+                    <div class="kb-field">
+                      <div class="kb-field-label-row">
+                        <span class="kb-field-label" id="kb-steps-label">
+                          Troubleshooting steps
+                        </span>
+                        <button type="button" class="kb-add-step-btn" id="kb-add-step-btn">
+                          Add step
+                        </button>
+                      </div>
+                      <div class="kb-steps-panel" id="kb-steps-panel">
+                        <p class="kb-steps-empty hidden" id="kb-steps-empty" role="status">
+                          No steps yet. Add at least one step customers can follow before publishing.
+                        </p>
+                        <div class="kb-steps-list" id="kb-steps-list" role="list"></div>
+                      </div>
+                      <p class="kb-field-hint">Each step is editable. These are published to the Notion page body.</p>
+                    </div>
+                    <div class="kb-field">
+                      <label class="kb-field-label" for="kb-tags">Tags</label>
+                      <input type="text" class="kb-input" id="kb-tags" placeholder="e.g. api, authentication, billing" autocomplete="off" />
+                      <p class="kb-field-hint">Comma-separated</p>
+                    </div>
+                    <div class="kb-download-field">
+                      <button type="button" class="secondary kb-download-btn hidden" id="kb-download-btn" aria-label="Download markdown">
+                        <svg class="kb-download-btn__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M12 3v12m0 0l4-4m-4 4L8 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <span>Download markdown</span>
+                      </button>
+                    </div>
+                    <p class="api-error hidden" id="kb-error"></p>
+                    <div class="kb-actions hidden" id="kb-actions">
+                      <button type="button" class="secondary" id="kb-retry-btn">Retry generation</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+          </div>
+        </div>
+
+        <div class="main-content-bottom">
+          <div class="keyboard-hint-row">
+            <div class="keyboard-hint hidden" id="keyboard-hint" role="note" aria-label="Keyboard shortcut tip">
+            <i class="ti ti-keyboard keyboard-hint__icon" aria-hidden="true"></i>
+            <p class="keyboard-hint__text">Use arrow keys to navigate between steps</p>
+            <button type="button" class="keyboard-hint__close" id="keyboard-hint-close" aria-label="Dismiss tip">
+              <i class="ti ti-x" aria-hidden="true"></i>
+            </button>
+            </div>
+          </div>
+
+          <div class="page-footer-region">
+            <footer class="page-footer">
+              <nav class="workflow-footer workflow-footer--step-first" id="workflow-footer" aria-label="Workflow navigation">
+                <button type="button" class="workflow-footer__back" id="footer-back-btn" aria-label="Go to previous step" hidden>
+                  <svg class="workflow-footer__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Back</span>
+                </button>
+                <div class="workflow-footer__bar">
+                  <p class="workflow-footer__progress" id="footer-step-counter" aria-live="polite">Step 1 of 4</p>
+                  <button type="button" class="workflow-footer__next is-muted" id="footer-next-btn" aria-label="Next" disabled>
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span id="footer-next-label">Next</span>
+                    <svg class="workflow-footer__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </nav>
+              <p class="kb-publish-error page-footer__publish-error hidden" id="kb-publish-error" role="alert">
+                Publishing failed, please try again
+              </p>
+            </footer>
+          </div>
+        </div>
+      </div>
+
+      <div class="site-footer-bar">
+        <p class="site-footer">
+          To learn more about the work behind this tool,
+          <a href="https://madihaintech.me" target="_blank" rel="noopener noreferrer">visit madihaintech.me</a>
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <div class="notion-modal-backdrop hidden" id="notion-publish-modal-backdrop" aria-hidden="true">
+    <div class="notion-publish-modal" id="notion-publish-modal" role="dialog" aria-modal="true" aria-labelledby="notion-publish-modal-title">
+      <button type="button" class="notion-publish-modal__close" id="notion-publish-modal-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="notion-publish-modal__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="notion-publish-modal__title" id="notion-publish-modal-title">Published to Notion</h2>
+      <p class="notion-publish-modal__hint" id="notion-publish-modal-hint">
+        This dialog only blocks the dashboard until you close it (Esc or ×). If Notion is slow, close extra Notion tabs first.
+      </p>
+      <a class="notion-publish-modal__cta" id="notion-publish-modal-link" href="#" target="_blank" rel="noopener noreferrer">View published page</a>
+      <button type="button" class="notion-publish-modal__copy" id="notion-publish-modal-copy">Copy page link</button>
+    </div>
+  </div>
+
+  <script src="js/documentation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

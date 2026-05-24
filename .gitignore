@@ -1,0 +1,20 @@
+# Dependencies
+worker/node_modules/
+
+# Wrangler
+worker/.wrangler/
+worker/node_modules/.cache/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.cursor/
+
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
