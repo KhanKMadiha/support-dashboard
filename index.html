@@ -115,23 +115,31 @@
             <header class="page-header">
               <div class="page-header__row">
                 <div class="page-header__copy">
-                  <h1>Support ticket analyser</h1>
+                  <div class="page-header__title-row">
+                    <h1>Support ticket analyser</h1>
+                    <span class="preview-badge hidden" id="preview-badge">Interactive preview</span>
+                  </div>
                   <p>Paste a ticket, analyse against documentation, then draft your reply and capture knowledge for the KB.</p>
+                  <p class="project-preview-meta hidden" id="project-preview-meta">
+                    Full workflow through response drafting. KB generation and Notion publish are previewed on this hosted version.
+                    <span class="project-preview-meta__links">
+                      <a href="https://github.com/KhanKMadiha/support-dashboard" target="_blank" rel="noopener noreferrer">View source</a>
+                      <span class="project-preview-meta__sep" aria-hidden="true">·</span>
+                      <a href="https://madihaintech.me" target="_blank" rel="noopener noreferrer">About this project</a>
+                    </span>
+                  </p>
                 </div>
               </div>
             </header>
 
-            <div class="portfolio-demo-banner hidden" id="portfolio-demo-banner" role="status">
-              <p>
-                <strong>Portfolio demo.</strong>
-                Steps 1–3 run in your browser. KB generation and Notion publish are simulated — nothing is sent to external services.
-                Self-hosting with your own worker: add <code>?live=1</code> to the URL.
-              </p>
-            </div>
-
             <div id="step-1-view" class="workflow-view">
               <section class="section" id="ticket-section">
-                <label for="incoming-ticket">Incoming ticket</label>
+                <div class="ticket-section__header">
+                  <label for="incoming-ticket">Incoming ticket</label>
+                  <button type="button" class="load-sample-ticket-btn hidden" id="load-sample-ticket-btn">
+                    Load sample ticket
+                  </button>
+                </div>
                 <textarea
                   id="incoming-ticket"
                   placeholder="Paste the customer's ticket here — subject, description, error messages, and any relevant context."

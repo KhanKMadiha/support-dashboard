@@ -34,6 +34,17 @@ function resolveDemoMode() {
 
 const IS_DEMO_MODE = resolveDemoMode();
 
+/** Sample ticket tuned for SSO documentation matching in the portfolio catalogue. */
+const SAMPLE_TICKET = `Subject: SSO login failing for enterprise users
+
+Hi support,
+
+Since this morning several users on our Azure AD SSO integration cannot sign in. They see "SAML assertion invalid" after selecting their organisation. We updated our IdP metadata last week but login worked until today.
+
+Error from browser: SAML Response signature validation failed
+
+Can you help us verify our IdP configuration and attribute mapping?`;
+
 const MATCH_THRESHOLD_NOTE = `Strong matches are at least ${CONFIG.strongMatchThreshold}% keyword relevance against our catalogue.`;
 
 const DOCS_PANEL_TITLE = {
@@ -127,10 +138,13 @@ const kbActions = document.getElementById("kb-actions");
 const kbPublishError = document.getElementById("kb-publish-error");
 const kbRetryBtn = document.getElementById("kb-retry-btn");
 
-const portfolioDemoBanner = document.getElementById("portfolio-demo-banner");
+const previewBadge = document.getElementById("preview-badge");
+const projectPreviewMeta = document.getElementById("project-preview-meta");
+const loadSampleTicketBtn = document.getElementById("load-sample-ticket-btn");
 
 const notionModalBackdrop = document.getElementById("notion-publish-modal-backdrop");
 const notionModalClose = document.getElementById("notion-publish-modal-close");
+const notionModalTitle = document.getElementById("notion-publish-modal-title");
 const notionModalLink = document.getElementById("notion-publish-modal-link");
 const notionModalCopy = document.getElementById("notion-publish-modal-copy");
 const notionModalHint = document.getElementById("notion-publish-modal-hint");
@@ -276,28 +290,28 @@ function updateFooterNavigation() {
   if (onKbStep) {
     footerNextBtn.classList.add("workflow-footer__next--publish");
     if (kbPublishing) {
-      footerNextLabel.textContent = "Publishing";
+      footerNextLabel.textContent = IS_DEMO_MODE ? "Previewing…" : "Publishing";
       footerNextBtn.classList.add("loading");
       footerNextBtn.setAttribute("aria-busy", "true");
     } else if (kbPublished) {
-      footerNextLabel.textContent = IS_DEMO_MODE ? "Published (demo)" : "Published";
+      footerNextLabel.textContent = IS_DEMO_MODE ? "Preview complete" : "Published";
     } else {
       footerNextLabel.textContent = IS_DEMO_MODE
-        ? "Publish (demo)"
+        ? "Preview publish"
         : FOOTER_NEXT_LABELS[FLOW_STEP.KB];
     }
     footerNextBtn.setAttribute(
       "aria-label",
       kbPublishing
         ? IS_DEMO_MODE
-          ? "Simulating publish"
+          ? "Running publish preview"
           : "Publishing to Notion"
         : kbPublished
           ? IS_DEMO_MODE
-            ? "Demo publish complete"
+            ? "Publish preview complete"
             : "Article published to Notion"
           : IS_DEMO_MODE
-            ? "Simulate publishing to Notion"
+            ? "Preview publishing to Notion"
             : FOOTER_NEXT_ARIA_LABELS[FLOW_STEP.KB]
     );
     footerNextBtn.disabled = !currentKbArticle || kbPublished || kbPublishing;
@@ -658,10 +672,16 @@ function openNotionPublishModal(notionUrl, options = {}) {
   const url = notionUrl || CONFIG.notionFallbackUrl;
   const isPublicSite = /\.notion\.site\//i.test(url);
 
+  if (notionModalTitle) {
+    notionModalTitle.textContent = demo
+      ? "Publish preview complete"
+      : "Published to Notion";
+  }
+
   if (notionModalLink) {
     notionModalLink.href = url;
     notionModalLink.textContent = demo
-      ? "About Notion (demo link)"
+      ? "Learn about Notion integrations"
       : isPublicSite
         ? "View published page"
         : "View in Notion";
@@ -669,7 +689,7 @@ function openNotionPublishModal(notionUrl, options = {}) {
 
   if (notionModalHint) {
     notionModalHint.textContent = demo
-      ? "Portfolio demo — no page was created. Self-host with ?live=1 and your worker to publish for real."
+      ? "Preview only on this hosted version. A live deployment publishes to your Notion workspace."
       : "This dialog only blocks the dashboard until you close it (Esc or ×). If Notion is slow, close extra Notion tabs first.";
   }
 
@@ -985,15 +1005,11 @@ function renderKbArticle(article) {
   renderKbSteps(article.steps);
 
   setKbFieldsEditable(true);
-  kbGenStatus.textContent = IS_DEMO_MODE ? "Ready for review (demo)" : "Ready for review";
+  kbGenStatus.textContent = "Ready for review";
   kbGenStatus.className = "status-badge match";
   updateKbActionsVisibility();
   updateFooterNavigation();
-  announce(
-    IS_DEMO_MODE
-      ? "Demo knowledge base article ready for review."
-      : "Knowledge base article ready for review."
-  );
+  announce("Knowledge base article ready for review.");
 }
 
 function resetAfterTicketChange() {
@@ -1156,10 +1172,10 @@ function buildDemoKbArticle(ticket, response) {
 
   return {
     title,
-    summary: `Portfolio demo article (not sent to Claude). This draft summarises how to address ${topic} based on your sample ticket and agent response.`,
+    summary: `This draft summarises how to address ${topic} based on the ticket and support response. Review and edit before publishing to your knowledge base.`,
     steps,
     category,
-    tags: ["demo", "portfolio", "kb-draft"]
+    tags: ["support-workflow", "kb-draft"]
   };
 }
 
@@ -1324,12 +1340,12 @@ async function publishKbArticle() {
     if (IS_DEMO_MODE) {
       await new Promise((r) => setTimeout(r, CONFIG.demoPublishDelayMs));
       kbPublished = true;
-      kbGenStatus.textContent = "Published (demo)";
+      kbGenStatus.textContent = "Preview complete";
       kbGenStatus.className = "status-badge match";
       setKbFieldsEditable(false);
       markAllStepsCompleted();
       openNotionPublishModal(CONFIG.demoNotionPreviewUrl, { demo: true });
-      announce("Demo publish complete. No Notion page was created.");
+      announce("Publish preview complete.");
     } else {
       const data = await publishToNotion(article);
       const notionUrl = extractNotionUrl(data);
@@ -1565,9 +1581,20 @@ notionModalBackdrop?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", handleWorkflowKeyboard);
 
+function loadSampleTicket() {
+  ticketEl.value = SAMPLE_TICKET;
+  handleTicketInput();
+  scheduleSaveDraft();
+  ticketEl.focus();
+  announce("Sample ticket loaded. Select Next to analyse against documentation.");
+}
+
 function initPortfolioDemo() {
   if (!IS_DEMO_MODE) return;
-  portfolioDemoBanner?.classList.remove("hidden");
+  previewBadge?.classList.remove("hidden");
+  projectPreviewMeta?.classList.remove("hidden");
+  loadSampleTicketBtn?.classList.remove("hidden");
+  loadSampleTicketBtn?.addEventListener("click", loadSampleTicket);
   document.body.classList.add("portfolio-demo");
 }
 
