@@ -4,7 +4,8 @@
 
 :root {
   --chrome-bg: #f5eee8;
-  --bg-base: var(--chrome-bg);
+  --bg-base: #fafaf8;
+  --workflow-footer-bg: #ffffff;
   --surface: var(--chrome-bg);
   --accent: #d4a4a0;
   --accent-hover: #c8928e;
@@ -577,12 +578,9 @@ body {
   flex-shrink: 0;
   width: 100%;
   padding: 0 var(--content-padding-x);
-  background: var(--bg-base);
-  box-sizing: border-box;
-}
-
-.main-content-bottom:not(:has(.keyboard-hint:not(.hidden))) .page-footer-region {
+  background: var(--workflow-footer-bg);
   border-top: 1px solid var(--border-soft);
+  box-sizing: border-box;
 }
 
 .keyboard-hint-row {
@@ -1000,7 +998,7 @@ button.loading .spinner,
   max-width: var(--content-max);
   margin: 0 auto;
   z-index: var(--z-footer);
-  background: var(--bg-base);
+  background: var(--workflow-footer-bg);
 }
 
 .workflow-footer {
