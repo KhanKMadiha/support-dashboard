@@ -5,8 +5,8 @@
 :root {
   --chrome-bg: #f5eee8;
   --bg-base: #fafaf8;
-  --workflow-footer-bg: #ffffff;
-  --surface: var(--chrome-bg);
+  --workflow-footer-bg: var(--bg-base);
+  --surface: var(--bg-base);
   --accent: #d4a4a0;
   --accent-hover: #c8928e;
   --surface-soft: #efe6de;
@@ -15,7 +15,7 @@
   --muted-light: rgba(26, 26, 26, 0.45);
   --border-soft: rgba(180, 140, 135, 0.2);
   --border-strong: rgba(180, 140, 135, 0.38);
-  --white-glass: var(--chrome-bg);
+  --white-glass: var(--bg-base);
   --success: #5a7d5e;
   --warning: #9a7b4f;
   --error: #a65c5c;
@@ -720,8 +720,8 @@ body {
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--text-dark);
-  background: rgba(154, 123, 79, 0.12);
-  border: 1px solid rgba(154, 123, 79, 0.28);
+  background: var(--bg-base);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
 }
 
@@ -733,7 +733,7 @@ body {
   font-size: 0.78rem;
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--surface-soft);
 }
 
 .workflow-view {
@@ -816,7 +816,7 @@ textarea:focus-visible {
 
 textarea:read-only,
 textarea.is-readonly {
-  background: var(--surface-soft);
+  background: var(--bg-base);
   color: var(--text-dark);
   cursor: default;
   resize: none;
@@ -1227,7 +1227,7 @@ button.loading .spinner,
 /* Inset cards — low-contrast on panel surface (Option B) */
 .panel-inset-card {
   padding: 0.85rem 1rem;
-  background: var(--chrome-bg);
+  background: var(--bg-base);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
@@ -1546,7 +1546,7 @@ button.loading .spinner,
 
 .kb-input:disabled,
 .kb-textarea:disabled {
-  background: var(--surface-soft);
+  background: var(--bg-base);
   color: var(--text-dark);
   cursor: default;
   opacity: 0.92;
