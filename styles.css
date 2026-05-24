@@ -1246,6 +1246,11 @@ button.loading .spinner,
   box-shadow: var(--shadow);
 }
 
+#docs-panel:focus,
+#docs-panel:focus-visible {
+  outline: none;
+}
+
 .panel-header {
   display: flex;
   align-items: flex-start;
