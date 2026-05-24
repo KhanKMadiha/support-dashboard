@@ -731,15 +731,20 @@ body {
 
 .project-preview-meta {
   margin: 1.35rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  color: var(--muted);
   max-width: 40rem;
 }
 
+.project-preview-meta__text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
 .project-preview-meta__links {
-  display: inline;
-  white-space: nowrap;
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .project-preview-meta__links a {
