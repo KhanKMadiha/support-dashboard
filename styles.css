@@ -730,7 +730,7 @@ body {
 }
 
 .project-preview-meta {
-  margin: 0.65rem 0 0;
+  margin: 1.35rem 0 0;
   font-size: 0.82rem;
   line-height: 1.55;
   color: var(--muted);
