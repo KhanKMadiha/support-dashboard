@@ -103,8 +103,6 @@ In **demo mode**, steps 1–3 stay entirely in the browser; step 4 is mocked in 
 2. Settings → Pages → Deploy from branch `main`, folder `/` (root).
 3. Your demo URL will be `https://<user>.github.io/<repo>/` — demo mode activates automatically.
 
-Screenshots or a short screen recording of a **real** publish (using `?live=1` and a sandbox Notion DB) coming shortly 
-
 ## Privacy & security
 
 - Never commit API keys or `.env` files.
