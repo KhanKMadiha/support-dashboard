@@ -1339,37 +1339,111 @@ async function callClaude(userPrompt, maxTokens = 2048) {
   return textBlock.text.trim();
 }
 
+const KB_STEP_BOILERPLATE_PATTERNS = [
+  /^hi[,.]?\s*$/i,
+  /^hello[,.]?\s*$/i,
+  /^dear\b/i,
+  /^thank you for reaching out/i,
+  /^thanks for (reaching out|contacting)/i,
+  /^i understand you(?:'re| are)/i,
+  /^i'?m here to help/i,
+  /^here are the steps/i,
+  /^you can find our full guide/i,
+  /^if you still need help/i,
+  /^please (reply|contact|reach out)/i,
+  /^best regards/i,
+  /^kind regards/i,
+  /^regards[,.]?\s*$/i,
+  /^support\s*$/i,
+  /^reply to this thread/i,
+  /\/kb\//i,
+  /^let me know if/i
+];
+
+function isKbBoilerplateStep(line) {
+  const text = String(line).trim();
+  if (!text || text.length < 12) return true;
+  return KB_STEP_BOILERPLATE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function extractNumberedStepsFromText(text) {
+  const steps = [];
+  for (const line of String(text).split(/\n/)) {
+    const match = line.trim().match(/^\d+[\.\):\-]\s+(.+)$/);
+    if (!match) continue;
+    const step = match[1].trim();
+    if (step && !isKbBoilerplateStep(step)) steps.push(step);
+  }
+  return steps;
+}
+
+function sanitizeKbSteps(steps) {
+  const seen = new Set();
+  const cleaned = [];
+  for (const raw of steps) {
+    const step = String(raw).trim();
+    if (!step || isKbBoilerplateStep(step)) continue;
+    const key = step.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    cleaned.push(step);
+  }
+  return cleaned.slice(0, 8);
+}
+
+function stepsFromNearMissCatalogue() {
+  const nearMisses = analysisState?.nearMisses;
+  if (!Array.isArray(nearMisses) || !nearMisses.length) return [];
+
+  const merged = [];
+  for (const doc of nearMisses) {
+    const docSteps = Array.isArray(doc.resolutionSteps) ? doc.resolutionSteps : [];
+    for (const step of docSteps) {
+      if (merged.length >= 8) break;
+      merged.push(step);
+    }
+    if (merged.length >= 4) break;
+  }
+  return sanitizeKbSteps(merged);
+}
+
+function defaultKbTroubleshootingSteps() {
+  return [
+    "Confirm the issue matches your environment (account type, region, and integrations).",
+    "Apply the configuration or workaround described in the support response.",
+    "Test the workflow again and note any error messages or timestamps (UTC).",
+    "If the issue persists, contact support with reproduction steps and screenshots."
+  ];
+}
+
+function resolveKbArticleSteps(response) {
+  let steps = sanitizeKbSteps(extractNumberedStepsFromText(response));
+  if (steps.length < 2) steps = stepsFromNearMissCatalogue();
+  if (steps.length < 2) steps = defaultKbTroubleshootingSteps();
+  return steps;
+}
+
 function buildDemoKbArticle(ticket, response) {
   const lines = ticket.split(/\n/).map((line) => line.trim()).filter(Boolean);
   let title = lines[0] || "Knowledge base article";
-  title = title.replace(/^re:\s*/i, "").trim();
+  title = title.replace(/^(?:re:|subject:)\s*/i, "").trim();
   if (title.length > 80) title = `${title.slice(0, 77)}…`;
 
+  const topNearMiss = analysisState?.nearMisses?.[0];
   const topic =
     analysisState?.strong && analysisState.best
       ? analysisState.best.issueTopic || analysisState.best.title
-      : "this issue";
+      : topNearMiss?.issueTopic || topNearMiss?.title || "this issue";
   const category =
-    analysisState?.strong && analysisState.best ? analysisState.best.category : "General";
+    analysisState?.strong && analysisState.best
+      ? analysisState.best.category
+      : topNearMiss?.category || "General";
 
-  const stepsFromResponse = response
-    .split(/\n/)
-    .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
-    .filter((line) => line.length > 24);
-
-  const steps =
-    stepsFromResponse.length >= 2
-      ? stepsFromResponse.slice(0, 7)
-      : [
-          "Review the support response and confirm each step applies to your environment.",
-          "Apply the recommended configuration or workaround from the agent's reply.",
-          "Test the workflow again to confirm the issue is resolved.",
-          "If the problem continues, reply with any error messages and timestamps for further help."
-        ];
+  const steps = resolveKbArticleSteps(response);
 
   return {
     title,
-    summary: `This draft summarises how to address ${topic} based on the ticket and support response. Review and edit before publishing to your knowledge base.`,
+    summary: `How to resolve ${topic}: follow these troubleshooting steps based on the reported issue. Review and edit before publishing.`,
     steps,
     category,
     tags: ["support-workflow", "kb-draft"]
@@ -1388,10 +1462,15 @@ function parseKbJson(raw) {
     throw new Error("Invalid KB article structure.");
   }
 
+  const steps = sanitizeKbSteps(parsed.steps.map(String));
+  if (steps.length < 2) {
+    throw new Error("KB article must include at least two troubleshooting steps.");
+  }
+
   return {
     title: String(parsed.title),
     summary: String(parsed.summary),
-    steps: parsed.steps.map(String),
+    steps,
     category: String(parsed.category || "General"),
     tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : []
   };
@@ -1425,8 +1504,10 @@ Return ONLY valid JSON (no markdown fences, no commentary) with this exact struc
 }
 
 Requirements:
-- steps must be numbered troubleshooting/resolution steps a customer can follow (4-8 steps)
-- tone: professional, clear, empathetic
+- steps must be 4-8 imperative troubleshooting actions a customer can follow (catalogue style, not an email)
+- each step must start with a verb (Confirm, Verify, Reconnect, Check, etc.)
+- do NOT put greetings, sign-offs, thanks, empathy lines, or closers in steps (no "Hi", "Thank you for reaching out", "Best regards", "reply to this thread", or links to other articles)
+- summary may be empathetic and professional (2-3 sentences); steps must stay technical and actionable only
 - do not include internal ticket IDs or agent names
 - base content on the ticket issue and the support agent's confirmed response
 
