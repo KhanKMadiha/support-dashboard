@@ -92,6 +92,20 @@ const FOOTER_NEXT_ARIA_LABELS = {
   [FLOW_STEP.KB]: "Publish knowledge base article to Notion"
 };
 
+function isKbCaptureNeeded() {
+  return Boolean(analysisState && !analysisState.strong);
+}
+
+function getFlowStepTotal() {
+  return isKbCaptureNeeded() ? 4 : 3;
+}
+
+function capMaxReachedStepForAnalysis() {
+  if (!isKbCaptureNeeded() && maxReachedStep > FLOW_STEP.RESPONSE) {
+    maxReachedStep = FLOW_STEP.RESPONSE;
+  }
+}
+
 const SIDEBAR_COLLAPSED_KEY = "support-dashboard-sidebar-collapsed";
 const DRAFT_STORAGE_KEY = "support-dashboard-draft";
 const KEYBOARD_HINT_DISMISSED_KEY = "support-dashboard-keyboard-hint-dismissed";
@@ -205,6 +219,7 @@ function showStepView(step) {
 
 function canNavigateToStep(step) {
   if (step < FLOW_STEP.PASTE || step > FLOW_STEP.KB) return false;
+  if (step === FLOW_STEP.KB && !isKbCaptureNeeded()) return false;
   if (step > maxReachedStep) return false;
   if (step >= FLOW_STEP.MATCH && !analysisState) return false;
   return true;
@@ -214,21 +229,30 @@ function updateSidebarSteps(activeStep) {
   stepItems.forEach((item) => {
     const step = Number(item.dataset.step);
     const link = item.querySelector(".step-link");
+    const isKbSkipped = step === FLOW_STEP.KB && !isKbCaptureNeeded();
     const isActive = step === activeStep;
-    const isLocked = step > maxReachedStep;
-    const isCompleted = step < activeStep || (kbPublished && step <= FLOW_STEP.KB);
-    const isClickable = isActive || isCompleted;
+    const isLocked = step > maxReachedStep || isKbSkipped;
+    const isCompleted =
+      !isKbSkipped &&
+      (step < activeStep || (kbPublished && step <= FLOW_STEP.KB));
+    const isClickable = !isKbSkipped && (isActive || isCompleted);
 
-    item.classList.remove("active", "completed", "locked", "reachable", "upcoming");
+    item.classList.remove("active", "completed", "locked", "reachable", "upcoming", "skipped");
     if (isActive) item.classList.add("active");
     if (isCompleted) item.classList.add("completed");
-    if (isLocked) item.classList.add("locked");
+    if (isKbSkipped) item.classList.add("skipped", "locked");
+    else if (isLocked) item.classList.add("locked");
     else if (!isClickable) item.classList.add("upcoming");
     else item.classList.add("reachable");
 
     if (link) {
       link.disabled = !isClickable;
       link.setAttribute("aria-current", isActive ? "step" : "false");
+      if (isKbSkipped) {
+        link.setAttribute("title", "Not needed — documentation already matched");
+      } else {
+        link.removeAttribute("title");
+      }
     }
   });
 }
@@ -240,6 +264,9 @@ function setFlowStep(activeStep) {
 }
 
 function goToStep(targetStep, options = {}) {
+  if (targetStep === FLOW_STEP.KB && !isKbCaptureNeeded()) {
+    targetStep = FLOW_STEP.RESPONSE;
+  }
   if (targetStep >= FLOW_STEP.RESPONSE) syncTicketReference();
   showStepView(targetStep);
   setFlowStep(targetStep);
@@ -281,9 +308,12 @@ function markAllStepsCompleted() {
 function updateFooterNavigation() {
   const step = getVisibleFlowStep();
   const onKbStep = step === FLOW_STEP.KB;
+  const hideFooterNext = step === FLOW_STEP.RESPONSE && !isKbCaptureNeeded();
 
-  footerStepCounter.textContent = `Step ${step} of 4`;
+  const flowTotal = getFlowStepTotal();
+  footerStepCounter.textContent = `Step ${Math.min(step, flowTotal)} of ${flowTotal}`;
 
+  footerNextBtn.hidden = hideFooterNext;
   workflowFooter?.classList.toggle("workflow-footer--step-kb", onKbStep);
 
   if (step === FLOW_STEP.PASTE) {
@@ -339,6 +369,11 @@ function updateFooterNavigation() {
     return;
   }
 
+  if (hideFooterNext) {
+    footerNextBtn.disabled = true;
+    return;
+  }
+
   footerNextLabel.textContent = FOOTER_NEXT_LABELS[step];
   footerNextBtn.setAttribute("aria-label", FOOTER_NEXT_ARIA_LABELS[step]);
 
@@ -378,6 +413,7 @@ function handleFooterNext() {
     goToStep(FLOW_STEP.RESPONSE, { focus: true });
     updateCopyResponseVisibility();
   } else if (step === FLOW_STEP.RESPONSE) {
+    if (!isKbCaptureNeeded()) return;
     if (maxReachedStep >= FLOW_STEP.KB && currentKbArticle) {
       goToStep(FLOW_STEP.KB);
     } else {
@@ -698,7 +734,7 @@ function renderStrongMatch(match) {
       <span class="relevance">Relevance · ${match.relevance}% · Keywords: ${escapeHtml(match.matched.slice(0, 5).join(", ") || "—")}</span>
     </div>
     <p class="panel-note">
-      A suggested response will be ready when you continue. Replace the placeholder link (/kb/${escapeHtml(match.id)}) with your live URL before sending.
+      A suggested response will be ready when you continue. Replace the placeholder link (/kb/${escapeHtml(match.id)}) with your live URL before sending. No new KB article is generated when documentation already matches.
     </p>
     <p class="panel-note">${escapeHtml(MATCH_THRESHOLD_NOTE)}</p>
   `;
@@ -818,7 +854,9 @@ function saveDraft() {
         ticket: ticketEl.value,
         response: responseEl.value,
         step: getVisibleFlowStep(),
-        maxReachedStep
+        maxReachedStep: isKbCaptureNeeded()
+          ? maxReachedStep
+          : Math.min(maxReachedStep, FLOW_STEP.RESPONSE)
       })
     );
   } catch {
@@ -1172,7 +1210,9 @@ async function runAnalysis() {
     renderStrongMatch(result.best);
     responseEl.value = buildSuggestedResponse(result.best);
     responseHint.textContent =
-      "— suggested from documentation; personalise and update the /kb/ link before sending";
+      "— suggested from documentation; personalise and update the /kb/ link before sending. No new KB article needed.";
+    capMaxReachedStepForAnalysis();
+    if (getVisibleFlowStep() === FLOW_STEP.KB) goToStep(FLOW_STEP.RESPONSE);
     announce(`Documentation match found at ${result.best.relevance}% relevance.`);
   } else {
     renderDocumentationGap(result.nearMisses);
@@ -1296,6 +1336,8 @@ function parseKbJson(raw) {
 }
 
 async function generateKbArticle() {
+  if (!isKbCaptureNeeded()) return;
+
   const ticket = ticketEl.value.trim();
   const response = responseEl.value.trim();
   if (!ticket || !response) return;

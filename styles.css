@@ -477,6 +477,16 @@ body {
   border-color: var(--border-soft);
 }
 
+.step-item.skipped .step-label,
+.step-item.skipped .step-label-icon {
+  opacity: 0.5;
+}
+
+.step-item.skipped .step-marker {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
 .step-item.locked .step-label,
 .step-item.locked .step-label-icon {
   color: var(--muted-light);

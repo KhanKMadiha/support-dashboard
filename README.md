@@ -13,10 +13,10 @@ The long-form case study page source is in [`portfolio-support-dashboard.html`](
 | 1 | Paste the ticket |
 | 2 | Match against a KB catalogue (domain-keyword ratio, stopword filtering, word-boundary matching) |
 | 3 | Draft or edit the support response |
-| 4 | Generate a KB draft; publish to Notion in live mode |
+| 4 | **Documentation gap only** — generate a KB draft; publish to Notion in live mode |
 
-**Strong match** — ≥80% of an article’s domain keywords appear in the ticket.  
-**Documentation gap** — below 80%; related articles shown at 30–79% as interim context and product signal.
+**Strong match** — ≥80% of an article’s domain keywords appear in the ticket. Reuse the matched article in your response; Step 4 is skipped.  
+**Documentation gap** — below 80%; related articles shown at 30–79% as interim context and product signal; Step 4 captures new knowledge.
 
 ## Demo vs live mode
 
@@ -25,7 +25,7 @@ On GitHub Pages the app defaults to **portfolio demo mode**:
 | Step | Behaviour |
 |------|-----------|
 | 1–3 | Real — matching, gap detection, related articles, response drafting (browser only) |
-| 4 | Simulated — local KB draft; publish UI only (no Claude or Notion calls) |
+| 4 | Gap tickets only — simulated KB draft; publish UI only (no Claude or Notion calls) |
 
 | URL | Mode |
 |-----|------|
