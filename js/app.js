@@ -45,21 +45,82 @@ Error from browser: SAML Response signature validation failed
 
 Can you help us verify our IdP configuration and attribute mapping?`;
 
-/** Documentation gap (<80%) — surfaces data-export as a related article, not a strong match. */
-const SAMPLE_TICKET_GAP = `Subject: GDPR data export request for departing employee
+/** Documentation gap (<80%) — rotates on each load; related articles expose troubleshooting steps. */
+const SAMPLE_TICKETS_GAP = [
+  {
+    id: "hubspot-sync",
+    label: "HubSpot CRM sync",
+    text: `Subject: HubSpot deal sync stopped — pipeline stages not updating
 
-Description: We have a departing employee who has submitted a formal GDPR Subject Access Request for all data held about them on the platform. Our legal team requires a full export of all content, activity logs, comments, and account data associated with their user profile within 30 days.
+Hi support,
 
-Error message: No error. Data export functionality not visible in admin settings.
+Our HubSpot CRM integration was syncing deal stage changes into the platform until yesterday afternoon. Since then, updates in HubSpot no longer appear on our side. The integration page shows connected with no error banner.
+
+What we tried:
+- Disconnected and reconnected OAuth in Integrations
+- Confirmed HubSpot webhook deliveries return HTTP 200 to your endpoint
+- No firewall or IP allowlist changes on our side
 
 Steps to reproduce:
-Log in as admin
-Navigate to account settings
-Search for data export or GDPR tools
-No relevant option found
+1. Change a deal stage in HubSpot (e.g. Qualified → Proposal)
+2. Wait 15+ minutes
+3. Open the same deal in your app — stage still shows the old value
 
-Impact: Legal compliance deadline in 28 days. Failure to respond risks regulatory action under GDPR Article 15.
-Account: Enterprise account, 250 seats`;
+Impact: Sales ops is working from stale pipeline data on ~40 active deals.
+Account: Enterprise, EU region`
+  },
+  {
+    id: "webhook-delivery",
+    label: "Outbound webhooks",
+    text: `Subject: Outbound webhooks not firing for order.completed events
+
+Since last night's deploy our endpoint stops receiving order.completed webhooks. Other API calls work with the same Bearer token. Your event log shows deliveries as sent; our server sees nothing after 02:00 UTC.
+
+We verified: TLS cert valid, endpoint returns 200 in Postman, no rate limit headers on manual POSTs.
+
+Steps to reproduce:
+1. Complete a test order in staging
+2. Check webhook delivery log in admin — shows success
+3. Our receiver logs show no POST after 02:00 UTC
+
+Impact: Fulfillment is manual again for ~200 orders/day.`
+  },
+  {
+    id: "slow-dashboards",
+    label: "Slow dashboards",
+    text: `Subject: Analytics dashboards extremely slow after v4.2 rollout
+
+Since we enabled the v4.2 dashboard widgets yesterday, report pages take 60–90 seconds to load or time out. Same reports were under 5 seconds last week. Issue affects Chrome and Firefox, multiple regions.
+
+What we tried:
+- Hard refresh and private browsing
+- Cleared browser cache
+- Tested from office network and VPN — same behaviour
+
+Steps to reproduce:
+1. Open Reports → Revenue overview
+2. Select last 90 days
+3. Spinner runs until timeout or page becomes responsive after ~75s
+
+Impact: Leadership review meetings delayed; ops exporting CSVs manually.`
+  },
+  {
+    id: "mfa-lockout",
+    label: "MFA lockout",
+    text: `Subject: Admin locked out after phone replacement — MFA codes rejected
+
+Our workspace admin replaced their iPhone and cannot complete MFA at login. Authenticator app shows codes but the portal says invalid. Forgot-password email arrives but flow still requires MFA.
+
+No other admins on the account can access billing or user management.
+
+Steps to reproduce:
+1. Go to login, enter correct password
+2. Enter current code from Microsoft Authenticator
+3. Error: "Invalid verification code" (tried 5+ codes over 10 minutes)
+
+Impact: Cannot invite users or rotate API keys; renewal due in 3 days.`
+  }
+];
 
 const SAMPLE_KIND = { MATCH: "match", GAP: "gap" };
 
@@ -190,6 +251,7 @@ let kbPublished = false;
 let kbPublishing = false;
 let validationTimeout = null;
 let suppressTicketReset = false;
+let gapSampleCursor = 0;
 
 // --- Accessibility ---
 
@@ -1719,10 +1781,15 @@ notionModalBackdrop?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", handleWorkflowKeyboard);
 
+function isGapSampleTicket(ticketText) {
+  const trimmed = ticketText.trim();
+  return SAMPLE_TICKETS_GAP.some((sample) => trimmed === sample.text.trim());
+}
+
 function getActiveSampleFromTicket(ticketText) {
   const trimmed = ticketText.trim();
   if (trimmed === SAMPLE_TICKET_MATCH.trim()) return SAMPLE_KIND.MATCH;
-  if (trimmed === SAMPLE_TICKET_GAP.trim()) return SAMPLE_KIND.GAP;
+  if (isGapSampleTicket(trimmed)) return SAMPLE_KIND.GAP;
   return null;
 }
 
@@ -1757,9 +1824,25 @@ function loadSampleTicketMatch() {
 }
 
 function loadSampleTicketGap() {
+  const currentTrimmed = ticketEl?.value.trim() ?? "";
+  let index = gapSampleCursor % SAMPLE_TICKETS_GAP.length;
+  if (
+    SAMPLE_TICKETS_GAP.length > 1 &&
+    isGapSampleTicket(currentTrimmed)
+  ) {
+    const currentIndex = SAMPLE_TICKETS_GAP.findIndex(
+      (sample) => currentTrimmed === sample.text.trim()
+    );
+    if (currentIndex >= 0) {
+      index = (currentIndex + 1) % SAMPLE_TICKETS_GAP.length;
+    }
+  }
+  gapSampleCursor = (index + 1) % SAMPLE_TICKETS_GAP.length;
+
+  const sample = SAMPLE_TICKETS_GAP[index];
   loadSampleTicket(
-    SAMPLE_TICKET_GAP,
-    "Documentation-gap sample loaded. Select Next to analyse against documentation."
+    sample.text,
+    `Documentation-gap sample loaded: ${sample.label}. Select Next to analyse against documentation.`
   );
 }
 

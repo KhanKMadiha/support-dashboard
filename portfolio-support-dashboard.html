@@ -610,10 +610,10 @@
           </div>
         </div>
         <div class="phase-body">
-          <p>Paste a ticket, or load <strong>Sample: Strong Match</strong> (SSO) or <strong>Sample: Documentation Gap</strong> (GDPR export). Each catalogue article is scored by <strong>matched domain keywords ÷ total domain keywords</strong>, with generic support terms filtered out.</p>
+          <p>Paste a ticket, or load <strong>Sample: Strong Match</strong> (SSO) or <strong>Sample: Documentation Gap</strong> (rotates through CRM sync, webhooks, performance, MFA — each click loads a different gap scenario). Each catalogue article is scored by <strong>matched domain keywords ÷ total domain keywords</strong>, with generic support terms filtered out.</p>
           <p><strong>Strong match (≥80%):</strong> winning article, matched keywords, suggested response from documented steps — workflow ends at Step 3 (no duplicate KB capture).<br>
           <strong>Documentation gap (&lt;80%):</strong> gap label plus related articles at 30–79% — interim context for the agent, then Step 4 to draft and publish new knowledge.</p>
-          <p>Thresholds were tuned on realistic enterprise tickets (SSO, API, GDPR-style gaps) so false positives like substring matches do not suggest the wrong article.</p>
+          <p>Thresholds were tuned on realistic enterprise tickets (SSO, integrations, API, performance) so false positives like substring matches do not suggest the wrong article.</p>
         </div>
         <div class="phase-nav">
           <button class="phase-nav-btn" onclick="showPhase(1)">← Previous</button>
@@ -661,7 +661,7 @@
 
     <div class="try-card reveal" id="try-demo">
       <h3>Try it yourself</h3>
-      <p>On GitHub Pages, use <strong>Sample: Strong Match</strong> or <strong>Sample: Documentation Gap</strong>, then walk match/gap logic and the KB preview flow.</p>
+      <p>On GitHub Pages, use <strong>Sample: Strong Match</strong> or <strong>Sample: Documentation Gap</strong> (click again for another gap ticket), then walk match/gap logic and the KB preview flow.</p>
       <div style="margin-top:1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;">
         <a class="live-btn" href="https://khankmadiha.github.io/support-dashboard/" target="_blank" rel="noopener noreferrer">Open interactive demo →</a>
         <a class="secondary-btn" href="https://github.com/KhanKMadiha/support-dashboard" target="_blank" rel="noopener noreferrer">View source on GitHub</a>
