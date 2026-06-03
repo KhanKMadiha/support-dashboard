@@ -219,6 +219,7 @@ const kbContent = document.getElementById("kb-article-content");
 const kbTitle = document.getElementById("kb-title");
 const kbCategory = document.getElementById("kb-category");
 const kbSummary = document.getElementById("kb-summary");
+const kbDescription = document.getElementById("kb-description");
 const kbStepsSection = document.getElementById("kb-steps-section");
 const kbShowStepsBtn = document.getElementById("kb-show-steps-btn");
 const kbStepsList = document.getElementById("kb-steps-list");
@@ -226,7 +227,7 @@ const kbStepsLabel = document.getElementById("kb-steps-label");
 const kbStepsEmpty = document.getElementById("kb-steps-empty");
 const kbAddStepBtn = document.getElementById("kb-add-step-btn");
 const kbTags = document.getElementById("kb-tags");
-const kbFormFields = [kbTitle, kbCategory, kbSummary, kbTags];
+const kbFormFields = [kbTitle, kbCategory, kbSummary, kbDescription, kbTags];
 const kbError = document.getElementById("kb-error");
 const kbGenStatus = document.getElementById("kb-gen-status");
 const kbActions = document.getElementById("kb-actions");
@@ -986,6 +987,7 @@ function resetKbArticleOnly() {
   if (kbTitle) kbTitle.value = "";
   if (kbCategory) kbCategory.value = "";
   if (kbSummary) kbSummary.value = "";
+  if (kbDescription) kbDescription.value = "";
   if (kbTags) kbTags.value = "";
   if (kbStepsList) kbStepsList.replaceChildren();
   updateKbStepsUi();
@@ -1083,6 +1085,7 @@ function syncKbArticleFromForm() {
   currentKbArticle = {
     title: kbTitle.value.trim(),
     summary: kbSummary.value.trim(),
+    description: kbDescription?.value.trim() ?? "",
     category: kbCategory.value.trim() || "General",
     steps,
     tags
@@ -1094,6 +1097,7 @@ function syncKbArticleFromForm() {
 function validateKbArticle(article) {
   if (!article.title) return "Add a title before publishing.";
   if (!article.summary) return "Add a summary before publishing.";
+  if (!article.description) return "Add a description before publishing.";
   return null;
 }
 
@@ -1110,6 +1114,10 @@ function buildKbMarkdown(article) {
 ## Summary
 
 ${article.summary}
+
+## Description
+
+${article.description}
 ${stepsBlock}`;
 }
 
@@ -1131,6 +1139,27 @@ function buildNotionPageChildren(article) {
         }
       }
     );
+  }
+
+  if (article.description) {
+    const descriptionChunks = String(article.description)
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    blocks.push({
+      object: "block",
+      type: "heading_2",
+      heading_2: { rich_text: [{ type: "text", text: { content: "Description" } }] }
+    });
+    for (const chunk of descriptionChunks.slice(0, 12)) {
+      blocks.push({
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [{ type: "text", text: { content: chunk.slice(0, 2000) } }]
+        }
+      });
+    }
   }
 
   if (article.steps?.length) {
@@ -1158,6 +1187,7 @@ function buildNotionPublishPayload(article) {
   return {
     title: article.title,
     summary: article.summary,
+    description: article.description,
     category: article.category,
     tags: article.tags,
     steps: article.steps,
@@ -1194,7 +1224,7 @@ function downloadKbArticle() {
   if (!currentKbArticle) return;
 
   const article = syncKbArticleFromForm();
-  if (!article.title && !article.summary && !article.steps.length) return;
+  if (!article.title && !article.summary && !article.description && !article.steps.length) return;
 
   downloadKbMarkdownFile(article);
   announce("Markdown file downloaded.");
@@ -1209,6 +1239,7 @@ function renderKbArticle(article) {
   kbTitle.value = article.title;
   kbCategory.value = article.category;
   kbSummary.value = article.summary;
+  if (kbDescription) kbDescription.value = article.description ?? "";
   kbTags.value = article.tags.join(", ");
   renderKbSteps(article.steps);
 
@@ -1217,10 +1248,7 @@ function renderKbArticle(article) {
   kbGenStatus.className = "status-badge match";
   updateKbActionsVisibility();
   updateFooterNavigation();
-  const reviewMsg = article.steps?.length
-    ? "Knowledge base article ready for review."
-    : "Summary-only knowledge base draft ready for review. Add resolution steps if needed.";
-  announce(reviewMsg);
+  announce("Knowledge base article ready for review.");
 }
 
 function resetAfterTicketChange() {
@@ -1412,6 +1440,62 @@ function resolveKbArticleSteps(response) {
   return sanitizeKbSteps(extractNumberedStepsFromText(response));
 }
 
+function buildKbDescriptionFromResponse(response) {
+  const paragraphs = [];
+  let buffer = [];
+
+  const flush = () => {
+    if (buffer.length) {
+      paragraphs.push(buffer.join(" "));
+      buffer = [];
+    }
+  };
+
+  for (const line of String(response).split(/\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flush();
+      continue;
+    }
+    if (/^\d+[\.\):\-]\s+/.test(trimmed)) continue;
+    if (isKbBoilerplateStep(trimmed)) continue;
+    buffer.push(trimmed);
+  }
+  flush();
+
+  let description = paragraphs.join("\n\n").trim();
+  if (description.length >= 40) return description;
+
+  const fallbackLines = String(response)
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !isKbBoilerplateStep(l));
+  description = fallbackLines.join("\n\n").trim();
+  return description || String(response).trim();
+}
+
+function buildKbDescriptionFromTicket(ticket) {
+  const lines = ticket
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const body = lines.slice(1).join("\n\n") || lines[0] || "";
+  return body.trim();
+}
+
+function buildDemoKbSummary(ticket, topic) {
+  const firstLine =
+    ticket
+      .split(/\n/)
+      .map((l) => l.trim())
+      .find(Boolean) || "";
+  const subject = firstLine.replace(/^(?:subject:|re:)\s*/i, "").trim();
+  if (subject) {
+    return `How to address ${topic} related to “${subject.slice(0, 100)}”.`;
+  }
+  return `How to address ${topic} based on this support case.`;
+}
+
 function buildDemoKbArticle(ticket, response) {
   const lines = ticket.split(/\n/).map((line) => line.trim()).filter(Boolean);
   let title = lines[0] || "Knowledge base article";
@@ -1429,10 +1513,19 @@ function buildDemoKbArticle(ticket, response) {
       : topNearMiss?.category || "General";
 
   const steps = resolveKbArticleSteps(response);
+  let description = buildKbDescriptionFromResponse(response);
+  if (!description.trim()) {
+    description = buildKbDescriptionFromTicket(ticket);
+  }
+  if (!description.trim()) {
+    description =
+      "Add the customer-facing explanation and resolution here, based on your support response.";
+  }
 
   return {
     title,
-    summary: `How to resolve ${topic}: follow these troubleshooting steps based on the reported issue. Review and edit before publishing.`,
+    summary: buildDemoKbSummary(ticket, topic),
+    description,
     steps,
     category,
     tags: ["support-workflow", "kb-draft"]
@@ -1447,7 +1540,7 @@ function parseKbJson(raw) {
     .trim();
   const parsed = JSON.parse(cleaned);
 
-  if (!parsed.title || !parsed.summary || !Array.isArray(parsed.steps)) {
+  if (!parsed.title || !parsed.summary || !parsed.description || !Array.isArray(parsed.steps)) {
     throw new Error("Invalid KB article structure.");
   }
 
@@ -1456,6 +1549,7 @@ function parseKbJson(raw) {
   return {
     title: String(parsed.title),
     summary: String(parsed.summary),
+    description: String(parsed.description),
     steps,
     category: String(parsed.category || "General"),
     tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : []
@@ -1483,18 +1577,21 @@ async function generateKbArticle() {
 Return ONLY valid JSON (no markdown fences, no commentary) with this exact structure:
 {
   "title": "clear article title",
-  "summary": "2-3 sentence overview for customers",
+  "summary": "1-2 sentence overview for listings",
+  "description": "main article body for customers",
   "steps": ["step 1", "step 2"] or [],
   "category": "one category name",
   "tags": ["tag1", "tag2", "tag3"]
 }
 
 Requirements:
-- if the support response contains numbered troubleshooting/resolution actions, include 2-8 imperative steps (catalogue style, not an email); otherwise return "steps": []
+- description is the primary KB article body: rewrite the support resolution for customers (problem context, cause, fix, verification). No greetings or sign-offs. Use paragraphs.
+- summary is a short teaser only (1-2 sentences), not the full article
+- if the support response contains numbered troubleshooting/resolution actions, include 2-8 imperative steps in "steps" (catalogue style); otherwise return "steps": []
 - each step must start with a verb (Confirm, Verify, Reconnect, Check, etc.)
 - do NOT put greetings, sign-offs, thanks, empathy lines, or closers in steps (no "Hi", "Thank you for reaching out", "Best regards", "reply to this thread", or links to other articles)
-- do not invent steps when the response is prose-only — use a strong summary instead
-- summary may be empathetic and professional (2-3 sentences); steps must stay technical and actionable only
+- do not invent steps when the response is prose-only
+- steps must stay technical and actionable only
 - do not include internal ticket IDs or agent names
 - base content on the ticket issue and the support agent's confirmed response
 

@@ -68,12 +68,19 @@ function numberedStepBlock(text) {
   };
 }
 
-function buildPageChildren({ summary, steps }) {
+function buildPageChildren({ summary, description, steps }) {
   const blocks = [];
   const stepList = Array.isArray(steps) ? steps.map(String).filter(Boolean) : [];
 
   if (summary) {
     blocks.push(headingBlock("Summary"), paragraphBlock(summary));
+  }
+
+  if (description) {
+    blocks.push(headingBlock("Description"));
+    for (const chunk of String(description).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).slice(0, 12)) {
+      blocks.push(paragraphBlock(chunk));
+    }
   }
 
   if (stepList.length) {
@@ -140,16 +147,19 @@ async function handleNotion(request, env) {
   }
 
   const payload = await request.json();
-  const { title, summary, category, tags, steps } = payload;
+  const { title, summary, description, category, tags, steps } = payload;
 
-  if (!title || !summary) {
-    return jsonResponse({ object: "error", message: "title and summary are required" }, 400);
+  if (!title || !summary || !description) {
+    return jsonResponse(
+      { object: "error", message: "title, summary, and description are required" },
+      400
+    );
   }
 
-  const children = buildPageChildren({ summary, steps });
+  const children = buildPageChildren({ summary, description, steps });
   if (!children.length) {
     return jsonResponse(
-      { object: "error", message: "At least one troubleshooting step is required for page content" },
+      { object: "error", message: "At least summary or description content is required for page content" },
       400
     );
   }
