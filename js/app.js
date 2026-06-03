@@ -408,36 +408,109 @@ function hideAnalyseValidation() {
 
 // --- Documentation matching ---
 
-function tokenise(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+/** Generic support language — excluded from ticket tokens and article keywords when scoring. */
+const STOPWORDS = new Set([
+  "admin",
+  "account",
+  "settings",
+  "user",
+  "users",
+  "platform",
+  "access",
+  "issue",
+  "problem",
+  "error",
+  "help",
+  "support",
+  "team",
+  "request",
+  "please",
+  "trying",
+  "unable",
+  "getting",
+  "found",
+  "using",
+  "hello",
+  "hi",
+  "thanks",
+  "thank",
+  "regards",
+  "dear",
+  "login",
+  "log",
+  "page",
+  "click",
+  "button",
+  "screen",
+  "message",
+  "system",
+  "service",
+  "contact",
+  "following",
+  "below",
+  "above",
+  "steps",
+  "step",
+  "navigate",
+  "check"
+]);
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function scoreDocument(doc, tokens, ticketLower) {
-  let score = 0;
-  const matched = [];
+function ticketWordsFromText(ticketText) {
+  return ticketText
+    .toLowerCase()
+    .split(/\W+/)
+    .filter((w) => w.length > 3 && !STOPWORDS.has(w));
+}
 
-  for (const kw of doc.keywords) {
-    if (ticketLower.includes(kw)) {
-      score += kw.includes(" ") ? 4 : 2;
-      matched.push(kw);
-    }
+function keywordMatchesTicket(keyword, ticketLower, ticketWords) {
+  const lower = keyword.toLowerCase().trim();
+  if (!lower || STOPWORDS.has(lower)) return false;
+
+  if (lower.includes(" ")) {
+    const pattern = lower
+      .split(/\s+/)
+      .map((part) => escapeRegExp(part))
+      .join("\\s+");
+    return new RegExp(`(?:^|[^a-z0-9])${pattern}(?:[^a-z0-9]|$)`, "i").test(ticketLower);
   }
 
-  for (const token of tokens) {
-    if (doc.keywords.some((kw) => kw.includes(token) || token.includes(kw))) {
-      score += 1;
-      if (!matched.includes(token)) matched.push(token);
-    }
-    if (doc.title.toLowerCase().includes(token)) score += 1.5;
-    if (doc.snippet.toLowerCase().includes(token)) score += 0.5;
+  if (lower.length <= 3) {
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(lower)}(?:[^a-z0-9]|$)`, "i").test(
+      ticketLower
+    );
   }
 
-  const relevance = Math.min(100, Math.round((score / 12) * 100));
-  return { score, matched: [...new Set(matched)], relevance };
+  return ticketWords.includes(lower);
+}
+
+function scoreKeywords(ticketText, articleKeywords) {
+  const ticketLower = ticketText.toLowerCase();
+  const ticketWords = ticketWordsFromText(ticketText);
+
+  const domainKeywords = articleKeywords.filter((k) => {
+    const lower = k.toLowerCase().trim();
+    return lower && !STOPWORDS.has(lower);
+  });
+
+  if (domainKeywords.length === 0) {
+    return { relevance: 0, matched: [], matchCount: 0 };
+  }
+
+  const matched = domainKeywords.filter((k) =>
+    keywordMatchesTicket(k, ticketLower, ticketWords)
+  );
+
+  const relevance = Math.round((matched.length / domainKeywords.length) * 100);
+  return { relevance, matched, matchCount: matched.length };
+}
+
+function scoreDocument(doc, ticketText) {
+  const { relevance, matched, matchCount } = scoreKeywords(ticketText, doc.keywords);
+  return { score: matchCount, matched, relevance };
 }
 
 function buildSuggestedResponse(doc) {
@@ -462,13 +535,13 @@ Support`;
 }
 
 function findBestMatch(ticketText) {
-  const tokens = tokenise(ticketText);
-  const ticketLower = ticketText.toLowerCase();
-
   const ranked = DOCUMENTATION.map((doc) => {
-    const { score, matched, relevance } = scoreDocument(doc, tokens, ticketLower);
+    const { score, matched, relevance } = scoreDocument(doc, ticketText);
     return { ...doc, score, matched, relevance };
-  }).sort((a, b) => b.relevance - a.relevance);
+  }).sort((a, b) => {
+    if (b.relevance !== a.relevance) return b.relevance - a.relevance;
+    return b.score - a.score;
+  });
 
   const nearMisses = ranked.filter(
     (d) => d.relevance >= CONFIG.nearMissMin && d.relevance < CONFIG.strongMatchThreshold

@@ -7,7 +7,7 @@ const DOCUMENTATION = [
     id: "sso-saml-login",
     title: "SSO and SAML login troubleshooting",
     category: "Authentication",
-    keywords: ["sso", "saml", "oauth", "login", "sign in", "sign-in", "idp", "identity provider", "federation", "assertion", "metadata"],
+    keywords: ["sso", "saml", "sign in", "idp", "assertion", "metadata", "integration", "configuration", "attribute", "signature", "invalid"],
     snippet: "Verify IdP metadata, clock skew, and attribute mapping when users cannot authenticate via enterprise SSO.",
     issueTopic: "SSO or SAML login",
     resolutionSteps: [
@@ -134,10 +134,3 @@ const DOCUMENTATION = [
     ]
   }
 ];
-
-const STOP_WORDS = new Set([
-  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
-  "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
-  "does", "did", "will", "would", "could", "should", "may", "might", "must", "shall",
-  "can", "please", "thanks", "thank", "hi", "hello", "dear", "regards", "help", "issue", "problem"
-]);
