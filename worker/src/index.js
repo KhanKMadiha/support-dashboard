@@ -77,7 +77,7 @@ function buildPageChildren({ summary, steps }) {
   }
 
   if (stepList.length) {
-    blocks.push(headingBlock("Troubleshooting steps"));
+    blocks.push(headingBlock("Resolution steps"));
     for (const step of stepList) {
       blocks.push(numberedStepBlock(step));
     }

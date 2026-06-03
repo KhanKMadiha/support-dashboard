@@ -219,6 +219,8 @@ const kbContent = document.getElementById("kb-article-content");
 const kbTitle = document.getElementById("kb-title");
 const kbCategory = document.getElementById("kb-category");
 const kbSummary = document.getElementById("kb-summary");
+const kbStepsSection = document.getElementById("kb-steps-section");
+const kbShowStepsBtn = document.getElementById("kb-show-steps-btn");
 const kbStepsList = document.getElementById("kb-steps-list");
 const kbStepsLabel = document.getElementById("kb-steps-label");
 const kbStepsEmpty = document.getElementById("kb-steps-empty");
@@ -1026,19 +1028,32 @@ function renumberKbSteps() {
   });
 }
 
+function updateKbStepsSectionVisibility() {
+  const count = kbStepsList?.querySelectorAll(".kb-step-input").length ?? 0;
+  const hasSteps = count > 0;
+  kbStepsSection?.classList.toggle("hidden", !hasSteps);
+  kbShowStepsBtn?.classList.toggle("hidden", hasSteps || kbPublished);
+  if (kbShowStepsBtn) kbShowStepsBtn.disabled = kbPublished;
+}
+
 function updateKbStepsUi() {
   const count = kbStepsList?.querySelectorAll(".kb-step-input").length ?? 0;
   kbStepsEmpty?.classList.toggle("hidden", count > 0);
   if (kbStepsLabel) {
-    kbStepsLabel.textContent = count
-      ? `Troubleshooting steps (${count})`
-      : "Troubleshooting steps";
+    kbStepsLabel.textContent = count ? `Resolution steps (${count})` : "Resolution steps";
   }
   if (kbAddStepBtn) kbAddStepBtn.disabled = kbPublished;
+  updateKbStepsSectionVisibility();
+}
+
+function showKbStepsSection() {
+  kbStepsSection?.classList.remove("hidden");
+  kbShowStepsBtn?.classList.add("hidden");
 }
 
 function addKbStepRow(stepText = "") {
   if (!kbStepsList || kbPublished) return;
+  showKbStepsSection();
   const index = kbStepsList.querySelectorAll(".kb-step-row").length;
   kbStepsList.appendChild(createKbStepRow(stepText, index));
   renumberKbSteps();
@@ -1079,11 +1094,14 @@ function syncKbArticleFromForm() {
 function validateKbArticle(article) {
   if (!article.title) return "Add a title before publishing.";
   if (!article.summary) return "Add a summary before publishing.";
-  if (!article.steps.length) return "Add at least one troubleshooting step before publishing.";
   return null;
 }
 
 function buildKbMarkdown(article) {
+  const stepsBlock = article.steps?.length
+    ? `\n## Resolution steps\n\n${article.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n`
+    : "";
+
   return `# ${article.title}
 
 **Category:** ${article.category}
@@ -1092,11 +1110,7 @@ function buildKbMarkdown(article) {
 ## Summary
 
 ${article.summary}
-
-## Troubleshooting steps
-
-${article.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}
-`;
+${stepsBlock}`;
 }
 
 function buildNotionPageChildren(article) {
@@ -1123,7 +1137,7 @@ function buildNotionPageChildren(article) {
     blocks.push({
       object: "block",
       type: "heading_2",
-      heading_2: { rich_text: [{ type: "text", text: { content: "Troubleshooting steps" } }] }
+      heading_2: { rich_text: [{ type: "text", text: { content: "Resolution steps" } }] }
     });
     for (const step of article.steps) {
       blocks.push({
@@ -1203,7 +1217,10 @@ function renderKbArticle(article) {
   kbGenStatus.className = "status-badge match";
   updateKbActionsVisibility();
   updateFooterNavigation();
-  announce("Knowledge base article ready for review.");
+  const reviewMsg = article.steps?.length
+    ? "Knowledge base article ready for review."
+    : "Summary-only knowledge base draft ready for review. Add resolution steps if needed.";
+  announce(reviewMsg);
 }
 
 function resetAfterTicketChange() {
@@ -1391,36 +1408,8 @@ function sanitizeKbSteps(steps) {
   return cleaned.slice(0, 8);
 }
 
-function stepsFromNearMissCatalogue() {
-  const nearMisses = analysisState?.nearMisses;
-  if (!Array.isArray(nearMisses) || !nearMisses.length) return [];
-
-  const merged = [];
-  for (const doc of nearMisses) {
-    const docSteps = Array.isArray(doc.resolutionSteps) ? doc.resolutionSteps : [];
-    for (const step of docSteps) {
-      if (merged.length >= 8) break;
-      merged.push(step);
-    }
-    if (merged.length >= 4) break;
-  }
-  return sanitizeKbSteps(merged);
-}
-
-function defaultKbTroubleshootingSteps() {
-  return [
-    "Confirm the issue matches your environment (account type, region, and integrations).",
-    "Apply the configuration or workaround described in the support response.",
-    "Test the workflow again and note any error messages or timestamps (UTC).",
-    "If the issue persists, contact support with reproduction steps and screenshots."
-  ];
-}
-
 function resolveKbArticleSteps(response) {
-  let steps = sanitizeKbSteps(extractNumberedStepsFromText(response));
-  if (steps.length < 2) steps = stepsFromNearMissCatalogue();
-  if (steps.length < 2) steps = defaultKbTroubleshootingSteps();
-  return steps;
+  return sanitizeKbSteps(extractNumberedStepsFromText(response));
 }
 
 function buildDemoKbArticle(ticket, response) {
@@ -1463,9 +1452,6 @@ function parseKbJson(raw) {
   }
 
   const steps = sanitizeKbSteps(parsed.steps.map(String));
-  if (steps.length < 2) {
-    throw new Error("KB article must include at least two troubleshooting steps.");
-  }
 
   return {
     title: String(parsed.title),
@@ -1498,15 +1484,16 @@ Return ONLY valid JSON (no markdown fences, no commentary) with this exact struc
 {
   "title": "clear article title",
   "summary": "2-3 sentence overview for customers",
-  "steps": ["step 1", "step 2", "..."],
+  "steps": ["step 1", "step 2"] or [],
   "category": "one category name",
   "tags": ["tag1", "tag2", "tag3"]
 }
 
 Requirements:
-- steps must be 4-8 imperative troubleshooting actions a customer can follow (catalogue style, not an email)
+- if the support response contains numbered troubleshooting/resolution actions, include 2-8 imperative steps (catalogue style, not an email); otherwise return "steps": []
 - each step must start with a verb (Confirm, Verify, Reconnect, Check, etc.)
 - do NOT put greetings, sign-offs, thanks, empathy lines, or closers in steps (no "Hi", "Thank you for reaching out", "Best regards", "reply to this thread", or links to other articles)
+- do not invent steps when the response is prose-only — use a strong summary instead
 - summary may be empathetic and professional (2-3 sentences); steps must stay technical and actionable only
 - do not include internal ticket IDs or agent names
 - base content on the ticket issue and the support agent's confirmed response
@@ -1832,6 +1819,7 @@ kbRetryBtn?.addEventListener("click", () => {
 });
 
 kbContent?.addEventListener("input", handleKbFormInput);
+kbShowStepsBtn?.addEventListener("click", () => addKbStepRow());
 kbAddStepBtn?.addEventListener("click", () => addKbStepRow());
 kbStepsList?.addEventListener("input", () => {
   handleKbFormInput();

@@ -245,22 +245,29 @@
                       <label class="kb-field-label" for="kb-summary">Summary</label>
                       <textarea class="kb-input kb-textarea" id="kb-summary" rows="4" spellcheck="true"></textarea>
                     </div>
-                    <div class="kb-field">
+                    <button
+                      type="button"
+                      class="kb-show-steps-btn hidden"
+                      id="kb-show-steps-btn"
+                    >
+                      Add resolution steps
+                    </button>
+                    <div class="kb-field hidden" id="kb-steps-section">
                       <div class="kb-field-label-row">
-                        <span class="kb-field-label" id="kb-steps-label">
-                          Troubleshooting steps
-                        </span>
+                        <span class="kb-field-label" id="kb-steps-label">Resolution steps</span>
                         <button type="button" class="kb-add-step-btn" id="kb-add-step-btn">
                           Add step
                         </button>
                       </div>
                       <div class="kb-steps-panel" id="kb-steps-panel">
                         <p class="kb-steps-empty hidden" id="kb-steps-empty" role="status">
-                          No steps yet. Add at least one step customers can follow before publishing.
+                          Add numbered troubleshooting actions customers can follow.
                         </p>
                         <div class="kb-steps-list" id="kb-steps-list" role="list"></div>
                       </div>
-                      <p class="kb-field-hint">Each step is editable. These are published to the Notion page body.</p>
+                      <p class="kb-field-hint" id="kb-steps-hint">
+                        Included in the published article when you add steps. Omitted for summary-only articles.
+                      </p>
                     </div>
                     <div class="kb-field">
                       <label class="kb-field-label" for="kb-tags">Tags</label>

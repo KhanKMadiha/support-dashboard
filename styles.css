@@ -1635,6 +1635,33 @@ button.loading .spinner,
   cursor: not-allowed;
 }
 
+.kb-show-steps-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.45rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--terracotta);
+  background: transparent;
+  border: 1px solid rgba(125, 58, 30, 0.35);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.kb-show-steps-btn:hover:not(:disabled) {
+  color: var(--terracotta-hover);
+  background: rgba(125, 58, 30, 0.06);
+  border-color: rgba(125, 58, 30, 0.5);
+}
+
+.kb-show-steps-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .kb-field-hint {
   margin: 0.35rem 0 0;
   font-size: 0.75rem;
