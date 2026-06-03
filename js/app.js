@@ -1405,10 +1405,78 @@ const KB_STEP_BOILERPLATE_PATTERNS = [
   /^let me know if/i
 ];
 
+const KB_EXCLUDED_LINE_PATTERNS = [
+  /^account:/i,
+  /^impact:/i,
+  /^description:/i,
+  /^error message:/i,
+  /^steps to reproduce/i,
+  /^what we tried/i,
+  /^since (yesterday|last night|this morning)/i,
+  /^on our (side|end)\b/i,
+  /\b(our logs|engineering team|escalat(?:ed|ing)?)\b/i,
+  /\b(i'?ve|we'?ve) (checked|reviewed|confirmed|escalated|spoken)\b/i,
+  /\binternal(?:ly)?\b/i,
+  /\baccount id\b/i,
+  /\buser id\b/i,
+  /\bworkspace id\b/i,
+  /\benterprise account\b/i,
+  /\b\d+\s*seats\b/i,
+  /\bdeparting employee\b/i,
+  /\bSubject Access Request\b/i,
+  /\bGDPR\b.*\bemployee\b/i,
+  /\bfor \d+ days\b/i,
+  /\b~\d+/,
+  /\b\d+\s*(orders|deals|users)\/day\b/i
+];
+
+const KB_DESCRIPTION_PLACEHOLDER =
+  "Describe the issue and resolution in general, customer-facing terms. Do not include names, emails, account identifiers, or ticket-specific details.";
+
 function isKbBoilerplateStep(line) {
   const text = String(line).trim();
   if (!text || text.length < 12) return true;
   return KB_STEP_BOILERPLATE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+function isKbExcludedLine(line) {
+  const text = String(line).trim();
+  if (!text) return true;
+  if (isKbBoilerplateStep(text)) return true;
+  if (KB_EXCLUDED_LINE_PATTERNS.some((pattern) => pattern.test(text))) return true;
+  if (/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(text)) return true;
+  if (/\b(?:ticket|case|ref)[\s#:]*[A-Z0-9-]{4,}\b/i.test(text)) return true;
+  return false;
+}
+
+function isKbClientFacingLine(line) {
+  const text = String(line).trim();
+  if (isKbExcludedLine(text)) return false;
+  if (text.length < 20) return false;
+  if (
+    /^(confirm|verify|check|reconnect|navigate|ensure|update|review|test|open|go to|try|if you|you can|you should|please)\b/i.test(
+      text
+    )
+  ) {
+    return true;
+  }
+  if (/\b(you|your)\b/i.test(text) && !/\b(on our|our logs|our side)\b/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function redactKbLine(line) {
+  return String(line)
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "your account email")
+    .replace(/\b(?:ticket|case|ref)[\s#:]*[A-Z0-9-]{4,}\b/gi, "your support case")
+    .replace(
+      /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
+      "the relevant identifier"
+    )
+    .replace(/\bAccount:\s*.+$/i, "")
+    .replace(/\bImpact:\s*.+$/i, "")
+    .trim();
 }
 
 function extractNumberedStepsFromText(text) {
@@ -1426,8 +1494,8 @@ function sanitizeKbSteps(steps) {
   const seen = new Set();
   const cleaned = [];
   for (const raw of steps) {
-    const step = String(raw).trim();
-    if (!step || isKbBoilerplateStep(step)) continue;
+    let step = redactKbLine(String(raw).trim());
+    if (!step || isKbExcludedLine(step)) continue;
     const key = step.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -1436,72 +1504,65 @@ function sanitizeKbSteps(steps) {
   return cleaned.slice(0, 8);
 }
 
-function resolveKbArticleSteps(response) {
-  return sanitizeKbSteps(extractNumberedStepsFromText(response));
-}
-
-function buildKbDescriptionFromResponse(response) {
+function sanitizeKbDescription(text) {
   const paragraphs = [];
   let buffer = [];
 
   const flush = () => {
-    if (buffer.length) {
-      paragraphs.push(buffer.join(" "));
-      buffer = [];
-    }
+    if (!buffer.length) return;
+    const paragraph = redactKbLine(buffer.join(" "));
+    if (paragraph && isKbClientFacingLine(paragraph)) paragraphs.push(paragraph);
+    buffer = [];
   };
 
-  for (const line of String(response).split(/\n/)) {
+  for (const line of String(text).split(/\n/)) {
     const trimmed = line.trim();
     if (!trimmed) {
       flush();
       continue;
     }
     if (/^\d+[\.\):\-]\s+/.test(trimmed)) continue;
-    if (isKbBoilerplateStep(trimmed)) continue;
+    if (!isKbClientFacingLine(trimmed)) continue;
     buffer.push(trimmed);
   }
   flush();
 
-  let description = paragraphs.join("\n\n").trim();
-  if (description.length >= 40) return description;
-
-  const fallbackLines = String(response)
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && !isKbBoilerplateStep(l));
-  description = fallbackLines.join("\n\n").trim();
-  return description || String(response).trim();
+  const description = paragraphs.join("\n\n").trim();
+  return description.length >= 40 ? description : "";
 }
 
-function buildKbDescriptionFromTicket(ticket) {
-  const lines = ticket
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  const body = lines.slice(1).join("\n\n") || lines[0] || "";
-  return body.trim();
+function resolveKbArticleSteps(response) {
+  return sanitizeKbSteps(extractNumberedStepsFromText(response));
 }
 
-function buildDemoKbSummary(ticket, topic) {
+function buildKbDescriptionFromResponse(response) {
+  const description = sanitizeKbDescription(response);
+  return description || KB_DESCRIPTION_PLACEHOLDER;
+}
+
+function buildDemoKbSummary(topic) {
+  return `Customer guide for ${topic}.`;
+}
+
+function buildDemoKbTitle(ticket, topic) {
+  const topNearMiss = analysisState?.nearMisses?.[0];
+  if (topNearMiss?.title) {
+    return topNearMiss.title;
+  }
+
   const firstLine =
     ticket
       .split(/\n/)
       .map((l) => l.trim())
       .find(Boolean) || "";
-  const subject = firstLine.replace(/^(?:subject:|re:)\s*/i, "").trim();
-  if (subject) {
-    return `How to address ${topic} related to “${subject.slice(0, 100)}”.`;
-  }
-  return `How to address ${topic} based on this support case.`;
+  let title = firstLine.replace(/^(?:re:|subject:)\s*/i, "").trim();
+  title = title.replace(/\s*[-—|]\s*.+$/, "").trim();
+  if (!title) return `Resolving ${topic}`;
+  if (title.length > 80) title = `${title.slice(0, 77)}…`;
+  return title;
 }
 
 function buildDemoKbArticle(ticket, response) {
-  const lines = ticket.split(/\n/).map((line) => line.trim()).filter(Boolean);
-  let title = lines[0] || "Knowledge base article";
-  title = title.replace(/^(?:re:|subject:)\s*/i, "").trim();
-  if (title.length > 80) title = `${title.slice(0, 77)}…`;
-
   const topNearMiss = analysisState?.nearMisses?.[0];
   const topic =
     analysisState?.strong && analysisState.best
@@ -1513,18 +1574,11 @@ function buildDemoKbArticle(ticket, response) {
       : topNearMiss?.category || "General";
 
   const steps = resolveKbArticleSteps(response);
-  let description = buildKbDescriptionFromResponse(response);
-  if (!description.trim()) {
-    description = buildKbDescriptionFromTicket(ticket);
-  }
-  if (!description.trim()) {
-    description =
-      "Add the customer-facing explanation and resolution here, based on your support response.";
-  }
+  const description = buildKbDescriptionFromResponse(response);
 
   return {
-    title,
-    summary: buildDemoKbSummary(ticket, topic),
+    title: buildDemoKbTitle(ticket, topic),
+    summary: buildDemoKbSummary(topic),
     description,
     steps,
     category,
@@ -1545,11 +1599,13 @@ function parseKbJson(raw) {
   }
 
   const steps = sanitizeKbSteps(parsed.steps.map(String));
+  const description =
+    sanitizeKbDescription(String(parsed.description)) || KB_DESCRIPTION_PLACEHOLDER;
 
   return {
     title: String(parsed.title),
     summary: String(parsed.summary),
-    description: String(parsed.description),
+    description,
     steps,
     category: String(parsed.category || "General"),
     tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : []
@@ -1585,7 +1641,9 @@ Return ONLY valid JSON (no markdown fences, no commentary) with this exact struc
 }
 
 Requirements:
-- description is the primary KB article body: rewrite the support resolution for customers (problem context, cause, fix, verification). No greetings or sign-offs. Use paragraphs.
+- description is the primary KB article body: rewrite only the customer-safe parts of the support resolution (problem context, cause, fix, verification). No greetings or sign-offs. Use paragraphs.
+- do NOT include customer names, email addresses, account IDs, ticket/case numbers, organisation-specific metrics, or internal investigation notes (logs, escalations, engineering)
+- write in generic terms any customer could follow; do not copy the email verbatim
 - summary is a short teaser only (1-2 sentences), not the full article
 - if the support response contains numbered troubleshooting/resolution actions, include 2-8 imperative steps in "steps" (catalogue style); otherwise return "steps": []
 - each step must start with a verb (Confirm, Verify, Reconnect, Check, etc.)
