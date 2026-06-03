@@ -61,6 +61,8 @@ No relevant option found
 Impact: Legal compliance deadline in 28 days. Failure to respond risks regulatory action under GDPR Article 15.
 Account: Enterprise account, 250 seats`;
 
+const SAMPLE_KIND = { MATCH: "match", GAP: "gap" };
+
 const MATCH_THRESHOLD_NOTE = `Strong matches are at least ${CONFIG.strongMatchThreshold}% keyword relevance against our catalogue.`;
 
 const DOCS_PANEL_TITLE = {
@@ -841,6 +843,7 @@ function loadDraft() {
     responseEl.value = draft.response || "";
     maxReachedStep = draft.maxReachedStep || FLOW_STEP.PASTE;
     updateAnalyseState();
+    syncSampleButtonStateFromTicket();
     goToStep(draft.step || FLOW_STEP.PASTE);
     return true;
   } catch {
@@ -1119,6 +1122,7 @@ function resetAfterTicketChange() {
   ticketEl.value = preservedTicket;
   goToStep(FLOW_STEP.PASTE);
   updateAnalyseState();
+  syncSampleButtonStateFromTicket();
   announce("Ticket changed — workflow reset.");
 }
 
@@ -1661,6 +1665,7 @@ responseEl?.addEventListener("input", () => {
 
 ticketEl?.addEventListener("input", () => {
   handleTicketInput();
+  syncSampleButtonStateFromTicket();
   scheduleSaveDraft();
 });
 
@@ -1672,9 +1677,31 @@ notionModalBackdrop?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", handleWorkflowKeyboard);
 
+function getActiveSampleFromTicket(ticketText) {
+  const trimmed = ticketText.trim();
+  if (trimmed === SAMPLE_TICKET_MATCH.trim()) return SAMPLE_KIND.MATCH;
+  if (trimmed === SAMPLE_TICKET_GAP.trim()) return SAMPLE_KIND.GAP;
+  return null;
+}
+
+function updateSampleButtonState(activeSample) {
+  if (!IS_DEMO_MODE) return;
+  const isMatch = activeSample === SAMPLE_KIND.MATCH;
+  const isGap = activeSample === SAMPLE_KIND.GAP;
+  loadSampleTicketMatchBtn?.classList.toggle("load-sample-ticket-btn--active", isMatch);
+  loadSampleTicketGapBtn?.classList.toggle("load-sample-ticket-btn--active", isGap);
+  loadSampleTicketMatchBtn?.setAttribute("aria-pressed", String(isMatch));
+  loadSampleTicketGapBtn?.setAttribute("aria-pressed", String(isGap));
+}
+
+function syncSampleButtonStateFromTicket() {
+  updateSampleButtonState(getActiveSampleFromTicket(ticketEl?.value ?? ""));
+}
+
 function loadSampleTicket(ticketText, announceMessage) {
   ticketEl.value = ticketText;
   handleTicketInput();
+  syncSampleButtonStateFromTicket();
   scheduleSaveDraft();
   ticketEl.focus();
   announce(announceMessage);

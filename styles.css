@@ -817,6 +817,18 @@ body {
   outline-offset: 2px;
 }
 
+.load-sample-ticket-btn--active,
+.load-sample-ticket-btn--active:hover {
+  color: #fff;
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+}
+
+.load-sample-ticket-btn--active:hover {
+  background: var(--terracotta-hover);
+  border-color: var(--terracotta-hover);
+}
+
 .workflow-view {
   animation: fadeIn 0.25s ease;
 }

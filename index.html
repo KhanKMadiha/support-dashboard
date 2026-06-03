@@ -128,11 +128,17 @@
               <section class="section" id="ticket-section">
                 <div class="ticket-section__header">
                   <label for="incoming-ticket">Incoming ticket</label>
-                  <div class="ticket-sample-actions hidden" id="ticket-sample-actions">
+                  <div
+                    class="ticket-sample-actions hidden"
+                    id="ticket-sample-actions"
+                    role="group"
+                    aria-label="Sample tickets"
+                  >
                     <button
                       type="button"
                       class="load-sample-ticket-btn"
                       id="load-sample-ticket-match-btn"
+                      aria-pressed="false"
                     >
                       Sample: strong match
                     </button>
@@ -140,6 +146,7 @@
                       type="button"
                       class="load-sample-ticket-btn"
                       id="load-sample-ticket-gap-btn"
+                      aria-pressed="false"
                     >
                       Sample: documentation gap
                     </button>
