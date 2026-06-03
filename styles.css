@@ -817,17 +817,6 @@ body {
   outline-offset: 2px;
 }
 
-.load-sample-ticket-btn--gap {
-  color: var(--slate);
-  border-color: rgba(45, 55, 72, 0.3);
-}
-
-.load-sample-ticket-btn--gap:hover {
-  color: var(--slate);
-  background: rgba(45, 55, 72, 0.06);
-  border-color: rgba(45, 55, 72, 0.45);
-}
-
 .workflow-view {
   animation: fadeIn 0.25s ease;
 }
