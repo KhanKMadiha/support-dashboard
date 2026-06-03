@@ -128,9 +128,22 @@
               <section class="section" id="ticket-section">
                 <div class="ticket-section__header">
                   <label for="incoming-ticket">Incoming ticket</label>
-                  <button type="button" class="load-sample-ticket-btn hidden" id="load-sample-ticket-btn">
-                    Load sample ticket
-                  </button>
+                  <div class="ticket-sample-actions hidden" id="ticket-sample-actions">
+                    <button
+                      type="button"
+                      class="load-sample-ticket-btn"
+                      id="load-sample-ticket-match-btn"
+                    >
+                      Sample: strong match
+                    </button>
+                    <button
+                      type="button"
+                      class="load-sample-ticket-btn load-sample-ticket-btn--gap"
+                      id="load-sample-ticket-gap-btn"
+                    >
+                      Sample: documentation gap
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   id="incoming-ticket"

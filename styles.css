@@ -784,6 +784,13 @@ body {
   margin-bottom: 0;
 }
 
+.ticket-sample-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
 .load-sample-ticket-btn {
   display: inline-flex;
   align-items: center;
@@ -808,6 +815,17 @@ body {
 .load-sample-ticket-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.load-sample-ticket-btn--gap {
+  color: var(--slate);
+  border-color: rgba(45, 55, 72, 0.3);
+}
+
+.load-sample-ticket-btn--gap:hover {
+  color: var(--slate);
+  background: rgba(45, 55, 72, 0.06);
+  border-color: rgba(45, 55, 72, 0.45);
 }
 
 .workflow-view {

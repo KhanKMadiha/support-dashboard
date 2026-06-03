@@ -34,8 +34,8 @@ function resolveDemoMode() {
 
 const IS_DEMO_MODE = resolveDemoMode();
 
-/** Sample ticket tuned for SSO documentation matching in the portfolio catalogue. */
-const SAMPLE_TICKET = `Subject: SSO login failing for enterprise users
+/** Strong match (≥80%) — SSO article in the portfolio catalogue. */
+const SAMPLE_TICKET_MATCH = `Subject: SSO login failing for enterprise users
 
 Hi support,
 
@@ -44,6 +44,22 @@ Since this morning several users on our Azure AD SSO integration cannot sign in.
 Error from browser: SAML Response signature validation failed
 
 Can you help us verify our IdP configuration and attribute mapping?`;
+
+/** Documentation gap (<80%) — surfaces data-export as a related article, not a strong match. */
+const SAMPLE_TICKET_GAP = `Subject: GDPR data export request for departing employee
+
+Description: We have a departing employee who has submitted a formal GDPR Subject Access Request for all data held about them on the platform. Our legal team requires a full export of all content, activity logs, comments, and account data associated with their user profile within 30 days.
+
+Error message: No error. Data export functionality not visible in admin settings.
+
+Steps to reproduce:
+Log in as admin
+Navigate to account settings
+Search for data export or GDPR tools
+No relevant option found
+
+Impact: Legal compliance deadline in 28 days. Failure to respond risks regulatory action under GDPR Article 15.
+Account: Enterprise account, 250 seats`;
 
 const MATCH_THRESHOLD_NOTE = `Strong matches are at least ${CONFIG.strongMatchThreshold}% keyword relevance against our catalogue.`;
 
@@ -140,7 +156,9 @@ const kbRetryBtn = document.getElementById("kb-retry-btn");
 
 const previewBadge = document.getElementById("preview-badge");
 const projectPreviewMeta = document.getElementById("project-preview-meta");
-const loadSampleTicketBtn = document.getElementById("load-sample-ticket-btn");
+const ticketSampleActions = document.getElementById("ticket-sample-actions");
+const loadSampleTicketMatchBtn = document.getElementById("load-sample-ticket-match-btn");
+const loadSampleTicketGapBtn = document.getElementById("load-sample-ticket-gap-btn");
 
 const notionModalBackdrop = document.getElementById("notion-publish-modal-backdrop");
 const notionModalClose = document.getElementById("notion-publish-modal-close");
@@ -1654,20 +1672,35 @@ notionModalBackdrop?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", handleWorkflowKeyboard);
 
-function loadSampleTicket() {
-  ticketEl.value = SAMPLE_TICKET;
+function loadSampleTicket(ticketText, announceMessage) {
+  ticketEl.value = ticketText;
   handleTicketInput();
   scheduleSaveDraft();
   ticketEl.focus();
-  announce("Sample ticket loaded. Select Next to analyse against documentation.");
+  announce(announceMessage);
+}
+
+function loadSampleTicketMatch() {
+  loadSampleTicket(
+    SAMPLE_TICKET_MATCH,
+    "Strong-match sample loaded. Select Next to analyse against documentation."
+  );
+}
+
+function loadSampleTicketGap() {
+  loadSampleTicket(
+    SAMPLE_TICKET_GAP,
+    "Documentation-gap sample loaded. Select Next to analyse against documentation."
+  );
 }
 
 function initPortfolioDemo() {
   if (!IS_DEMO_MODE) return;
   previewBadge?.classList.remove("hidden");
   projectPreviewMeta?.classList.remove("hidden");
-  loadSampleTicketBtn?.classList.remove("hidden");
-  loadSampleTicketBtn?.addEventListener("click", loadSampleTicket);
+  ticketSampleActions?.classList.remove("hidden");
+  loadSampleTicketMatchBtn?.addEventListener("click", loadSampleTicketMatch);
+  loadSampleTicketGapBtn?.addEventListener("click", loadSampleTicketGap);
   document.body.classList.add("portfolio-demo");
 }
 
