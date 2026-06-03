@@ -4,6 +4,8 @@ Paste a support ticket, match internal documentation, draft a response, and gene
 
 **[Live demo](https://khankmadiha.github.io/support-dashboard/)** · **[Case study](https://madihaintech.me/support-dashboard.html)** · **[Source](https://github.com/KhanKMadiha/support-dashboard)**
 
+The long-form case study page source is in [`portfolio-support-dashboard.html`](portfolio-support-dashboard.html) (for portfolio sites; the interactive app is `index.html`).
+
 ## How it works
 
 | Step | What happens |
