@@ -1511,7 +1511,7 @@ function sanitizeKbDescription(text) {
   const flush = () => {
     if (!buffer.length) return;
     const paragraph = redactKbLine(buffer.join(" "));
-    if (paragraph && isKbClientFacingLine(paragraph)) paragraphs.push(paragraph);
+    if (paragraph.length >= 20 && !isKbExcludedLine(paragraph)) paragraphs.push(paragraph);
     buffer = [];
   };
 
