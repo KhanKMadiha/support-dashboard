@@ -1,114 +1,55 @@
 # Support ticket analyser
 
-A four-step support workflow tool: paste a ticket, match internal documentation, draft a response, generate a KB article, and publish to Notion. Built as a portfolio project aligned with [madihaintech.me](https://madihaintech.me).
+Paste a support ticket, match internal documentation, draft a response, and generate a KB article. Public demo runs in the browser; live mode adds Claude and Notion via a Cloudflare Worker.
 
-> **Local development:** A separate folder `support-dashboard-local` (sibling to this repo) holds your real worker/Notion config for full-stack testing. Do not publish that folder to GitHub.
+**[Live demo](https://khankmadiha.github.io/support-dashboard/)** · **[Case study](https://madihaintech.me/support-dashboard.html)** · **[Source](https://github.com/KhanKMadiha/support-dashboard)**
 
-## Live demo (portfolio mode)
+## How it works
 
-When hosted on GitHub Pages (or opened as a local file), the app runs in **portfolio demo mode** by default:
+| Step | What happens |
+|------|----------------|
+| 1 | Paste the ticket |
+| 2 | Match against a KB catalogue (domain-keyword ratio, stopword filtering, word-boundary matching) |
+| 3 | Draft or edit the support response |
+| 4 | Generate a KB draft; publish to Notion in live mode |
+
+**Strong match** — ≥80% of an article’s domain keywords appear in the ticket.  
+**Documentation gap** — below 80%; related articles shown at 30–79% as interim context and product signal.
+
+## Demo vs live mode
+
+On GitHub Pages the app defaults to **portfolio demo mode**:
 
 | Step | Behaviour |
 |------|-----------|
-| 1–3 | **Real** — documentation matching, gap detection, related articles, response drafting (all in the browser) |
-| 4 | **Simulated** — KB draft is generated locally from your ticket/response; “Publish” shows a success modal but **does not** call Claude or Notion |
-
-A banner at the top explains this. **Do not paste real customer PII** into the public demo.
-
-### URL flags
+| 1–3 | Real — matching, gap detection, related articles, response drafting (browser only) |
+| 4 | Simulated — local KB draft; publish UI only (no Claude or Notion calls) |
 
 | URL | Mode |
 |-----|------|
 | Default on `*.github.io` | Demo |
-| `?live=1` | Full stack (requires your worker URLs in `js/app.js`) |
+| `?live=1` | Full stack (configure worker URLs in `js/app.js`) |
 | `?demo=1` | Force demo |
-| `localhost` | Live by default (for local development) |
+| `localhost` | Live by default |
 
-## Features
+**Do not paste real customer PII** into the public demo.
 
-- Keyword-based documentation matching (80% strong-match threshold)
-- Documentation gap flow with related articles (30–79% relevance) and expandable steps
-- Editable KB draft: title, category, summary, troubleshooting steps, tags
-- Download markdown from the current draft
-- Notion publish via Cloudflare Worker (live mode only): database properties + page body blocks
+## Live mode (short)
 
-## Project structure
-
-```
-support-dashboard/
-├── index.html           # App shell
-├── styles.css           # Styles
-├── js/
-│   ├── app.js           # Workflow, demo mode, API calls
-│   └── documentation.js  # Sample KB catalogue (replace with your docs)
-└── worker/
-    ├── src/index.js     # Claude + Notion proxy
-    ├── wrangler.toml    # Your deploy config (not committed with secrets)
-    └── wrangler.toml.example
-```
-
-## Self-hosting (full live mode)
-
-### 1. Frontend
-
-Open `index.html` with a static server, or deploy to GitHub Pages / any static host.
-
-Update `CONFIG` in `js/app.js`:
-
-```javascript
-proxyUrl: "https://YOUR-WORKER.workers.dev/",
-notionPublishUrl: "https://YOUR-WORKER.workers.dev/notion",
-notionFallbackUrl: "https://www.notion.so/", // optional fallback
-```
-
-Use `?live=1` on GitHub Pages, or run on `localhost` without `?demo=1`.
-
-### 2. Cloudflare Worker
-
-```bash
-cd worker
-npm install
-cp wrangler.toml.example wrangler.toml   # if needed
-# Edit wrangler.toml — set NOTION_DATABASE_ID
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put NOTION_API_KEY
-npx wrangler deploy
-```
-
-Create a Notion integration, share a **dedicated** database with it, and use that database ID in `wrangler.toml`.
-
-### 3. Documentation catalogue
-
-Edit `js/documentation.js` — each article needs `keywords`, `snippet`, `resolutionSteps`, and `issueTopic` for matching and suggested responses.
+1. Set `CONFIG.proxyUrl` and `CONFIG.notionPublishUrl` in `js/app.js`.
+2. Deploy the Worker in `worker/` with `ANTHROPIC_API_KEY` and `NOTION_API_KEY` (see `worker/wrangler.toml.example`).
+3. Replace the sample catalogue in `js/documentation.js` with your organisation’s articles (`keywords`, `resolutionSteps`, `issueTopic`).
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  Browser["Static app\n(index + app.js)"]
-  Worker["Cloudflare Worker"]
-  Claude["Anthropic API"]
-  Notion["Notion API"]
-  Browser -->|"POST / (live only)"| Worker
-  Browser -->|"POST /notion (live only)"| Worker
-  Worker --> Claude
-  Worker --> Notion
-```
+Static app on GitHub Pages. In live mode, a Cloudflare Worker proxies Anthropic (KB generation) and Notion (publish). API keys stay off the client.
 
-In **demo mode**, steps 1–3 stay entirely in the browser; step 4 is mocked in `app.js`.
-
-## GitHub Pages
-
-1. Push this repo to GitHub.
-2. Settings → Pages → Deploy from branch `main`, folder `/` (root).
-3. Your demo URL will be `https://<user>.github.io/<repo>/` — demo mode activates automatically.
-
-## Privacy & security
+## Privacy
 
 - Never commit API keys or `.env` files.
-- Use a **sandbox** Notion database for public demos, not production KB data.
-- Rate-limit your worker if you expose `?live=1` publicly.
+- Use a sandbox Notion database for demos.
+- Rate-limit the worker if you expose `?live=1` publicly.
 
 ## Licence
 
-MIT (or adjust as needed for your portfolio).
+MIT
