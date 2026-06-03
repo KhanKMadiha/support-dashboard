@@ -128,28 +128,34 @@
               <section class="section" id="ticket-section">
                 <div class="ticket-section__header">
                   <label for="incoming-ticket">Incoming ticket</label>
-                  <div
-                    class="ticket-sample-actions hidden"
-                    id="ticket-sample-actions"
-                    role="group"
-                    aria-label="Sample tickets"
-                  >
-                    <button
-                      type="button"
-                      class="load-sample-ticket-btn"
-                      id="load-sample-ticket-match-btn"
-                      aria-pressed="false"
+                  <div class="ticket-sample-actions hidden" id="ticket-sample-actions">
+                    <div
+                      class="ticket-sample-buttons"
+                      role="group"
+                      aria-label="Sample tickets"
                     >
-                      Sample: Strong Match
-                    </button>
-                    <button
-                      type="button"
-                      class="load-sample-ticket-btn"
-                      id="load-sample-ticket-gap-btn"
-                      aria-pressed="false"
-                    >
-                      Sample: Documentation Gap
-                    </button>
+                      <button
+                        type="button"
+                        class="load-sample-ticket-btn"
+                        id="load-sample-ticket-match-btn"
+                        aria-pressed="false"
+                        title="Load an SSO strong-match sample ticket"
+                      >
+                        Sample: Strong Match
+                      </button>
+                      <button
+                        type="button"
+                        class="load-sample-ticket-btn"
+                        id="load-sample-ticket-gap-btn"
+                        aria-pressed="false"
+                        title="Load a documentation-gap sample. Click again for another scenario."
+                      >
+                        Sample: Documentation Gap
+                      </button>
+                    </div>
+                    <p class="ticket-sample-hint" id="ticket-sample-hint">
+                      Documentation gap sample changes each time you click.
+                    </p>
                   </div>
                 </div>
                 <textarea

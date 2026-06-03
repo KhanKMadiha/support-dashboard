@@ -1853,6 +1853,12 @@ function initPortfolioDemo() {
   ticketSampleActions?.classList.remove("hidden");
   loadSampleTicketMatchBtn?.addEventListener("click", loadSampleTicketMatch);
   loadSampleTicketGapBtn?.addEventListener("click", loadSampleTicketGap);
+  if (loadSampleTicketGapBtn) {
+    loadSampleTicketGapBtn.setAttribute(
+      "aria-label",
+      "Sample documentation gap. Click again for another scenario."
+    );
+  }
   document.body.classList.add("portfolio-demo");
 }
 

@@ -796,9 +796,25 @@ body {
 
 .ticket-sample-actions {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  max-width: min(100%, 26rem);
+}
+
+.ticket-sample-buttons {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
   justify-content: flex-end;
+}
+
+.ticket-sample-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.35;
+  text-align: right;
 }
 
 .load-sample-ticket-btn {
